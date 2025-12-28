@@ -1,21 +1,31 @@
 package com.hometech.hometech.controller.Api;
 
-import com.hometech.hometech.dto.ChatMessagePayload;
-import com.hometech.hometech.dto.SendChatMessageRequest;
-import com.hometech.hometech.model.ChatMessage;
-import com.hometech.hometech.service.ChatIdentityService;
-import com.hometech.hometech.service.ConversationService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.hometech.hometech.dto.ChatMessagePayload;
+import com.hometech.hometech.enums.SenderType;
+import com.hometech.hometech.model.ChatMessage;
+import com.hometech.hometech.service.ChatIdentityService;
+import com.hometech.hometech.service.ConversationService;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -106,6 +116,10 @@ public class ChatMessageCommandController {
                 p.setSenderId(m.getSenderId());
                 p.setContent(m.getContent());
                 p.setSentAt(m.getSentAt());
+
+                p.setHasFile(m.getFileData() != null);
+                p.setFileName(m.getFileName());
+                p.setFileContentType(m.getFileContentType());
                 return p;
             }).collect(Collectors.toList());
 
@@ -183,54 +197,99 @@ public class ChatMessageCommandController {
         }
     }
 
-    @PostMapping("/messages")
-    public ResponseEntity<Map<String, Object>> sendMessage(
-            @RequestBody SendChatMessageRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        Map<String, Object> response = new HashMap<>();
-
+    @PostMapping(
+        value = "/messages",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<?> sendMessage(
+            @RequestParam("conversationId") Long conversationId,
+            @RequestParam(value = "content", required = false) String content,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
         try {
-            ChatIdentityService.ChatIdentity identity = chatIdentityService.resolve(userDetails);
+            // 1. Resolve identity
+            ChatIdentityService.ChatIdentity identity =
+                    chatIdentityService.resolve(userDetails);
 
-            if (request.getContent() == null || request.getContent().trim().isEmpty()) {
-                throw new RuntimeException("Nội dung tin nhắn không được để trống");
-            }
+            SenderType senderType;
+            Long senderId;
 
-            Long conversationId = request.getConversationId();
             if (identity.isCustomer()) {
-                if (conversationId == null) {
-                    conversationId = conversationService
-                            .getOrCreateConversation(identity.getCustomer())
-                            .getId();
-                } else {
-                    conversationService.getConversationForCustomer(conversationId,
-                            identity.getCustomer().getId());
-                }
-            } else if (conversationId == null) {
-                throw new RuntimeException("Admin phải chọn cuộc trò chuyện");
+                senderType = SenderType.CUSTOMER;
+                senderId = identity.getCustomer().getId();
+            } else if (identity.isAdmin()) {
+                senderType = SenderType.ADMIN;
+                senderId = identity.getAdmin().getId();
+            } else {
+                throw new RuntimeException("Không xác định được người gửi");
             }
 
-            ChatMessage message = conversationService.sendMessage(
+            // 2. GỌI ĐÚNG METHOD TRONG ConversationService
+            ChatMessage savedMessage = conversationService.sendMessage(
                     conversationId,
-                    identity.getSenderType(),
-                    identity.getSenderId(),
-                    request.getContent()
+                    senderType,
+                    senderId,
+                    content,
+                    file
             );
 
-            messagingTemplate.convertAndSend("/topic/messages/" + conversationId, message);
+            // 3. Build payload realtime
+            ChatMessagePayload payload = new ChatMessagePayload();
+            payload.setId(savedMessage.getId());
+            payload.setSenderType(savedMessage.getSenderType().name());
+            payload.setSenderId(savedMessage.getSenderId());
+            payload.setContent(savedMessage.getContent());
+            payload.setSentAt(savedMessage.getSentAt());
 
-            response.put("success", true);
-            response.put("message", "Message sent");
-            response.put("data", message);
-            return ResponseEntity.ok(response);
+            // 4. Gửi WebSocket
+            messagingTemplate.convertAndSend(
+                    "/topic/conversations/" + conversationId,
+                    payload
+            );
+
+            return ResponseEntity.ok(payload);
 
         } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "Failed to send message");
-            response.put("error", e.getMessage());
+            response.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
+    }
+    @GetMapping("/messages/{id}/file")
+    public ResponseEntity<byte[]> downloadFile(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        // 1. Resolve identity
+        ChatIdentityService.ChatIdentity identity =
+                chatIdentityService.resolve(userDetails);
+
+        // 2. Lấy message theo ID (ĐÚNG NGHIỆP VỤ)
+        ChatMessage message = conversationService.getMessageById(id);
+
+        // 3. Check quyền (customer chỉ xem message của mình)
+        if (identity.isCustomer()) {
+            Long customerId = message.getConversation().getCustomer().getId();
+            if (!customerId.equals(identity.getCustomer().getId())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+
+        // 4. Không có file
+        if (message.getFileData() == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // 5. Trả file từ LONGBLOB
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(message.getFileContentType()))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + message.getFileName() + "\""
+                )
+                .body(message.getFileData());
     }
 }
 

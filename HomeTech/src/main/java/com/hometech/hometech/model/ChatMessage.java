@@ -31,6 +31,34 @@ public class ChatMessage {
 
     @Column(nullable = false, length = 1000)
     private String content;
+    @Lob
+    @Column(name = "file_data", columnDefinition = "LONGBLOB")
+    private byte[] fileData;
+
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "file_content_type")
+    private String fileContentType;
+    public String getFileName() {
+        return fileName;
+    }
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+    public String getFileContentType() {
+        return fileContentType;
+    }
+    public void setFileContentType(String fileContentType) {
+        this.fileContentType = fileContentType;
+    }
+    public byte[] getFileData() {
+        return fileData;
+    }
+    public void setFileData(byte[] fileData) {
+        this.fileData = fileData;
+    }
+    
 
     private LocalDateTime sentAt;
 

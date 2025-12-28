@@ -86,6 +86,15 @@ function ChatManagement({ initialUserId }) {
         setError('Không thể tạo cuộc trò chuyện với khách hàng này.');
       }
     };
+    const fetchFileWithAuth = async (messageId) => {
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(`/api/chat/messages/${messageId}/file`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Unauthorized');
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  };
 
     ensureConversationForUser();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,7 +105,7 @@ function ChatManagement({ initialUserId }) {
 
     if (!stompClientRef.current) {
       const client = new Client({
-        webSocketFactory: () => new SockJS('/ws'),
+        webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
         reconnectDelay: 5000,
         debug: () => {},
       });
@@ -125,11 +134,16 @@ function ChatManagement({ initialUserId }) {
     }
 
     subscriptionRef.current = stompClientRef.current.subscribe(
-      `/topic/messages/${conversationId}`,
+      `/topic/conversations/${conversationId}`,
       (message) => {
         try {
           const body = JSON.parse(message.body);
-          setMessages((prev) => [...prev, body]);
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === body.id)) {
+              return prev; // đã có → bỏ
+            }
+            return [...prev, body];
+          });
         } catch (e) {
           console.error('Invalid message payload', e);
         }
@@ -258,9 +272,36 @@ function ChatManagement({ initialUserId }) {
                     }
                   >
                     <div className={styles.bubble}>
-                      <div className={styles.content}>{m.content}</div>
-                      <div className={styles.timestamp}>{formatTime(m.sentAt)}</div>
+                      {m.content && (
+                        <div className={styles.content}>{m.content}</div>
+                      )}
+
+                      {m.hasFile && (
+                        <button
+                          style={{ marginTop: '6px' }}
+                          onClick={async () => {
+                            try {
+                              const url = await fetchFileWithAuth(m.id);
+                              const a = document.createElement('a');
+                              a.href = url;
+                              a.download = m.fileName;
+                              a.click();
+                              URL.revokeObjectURL(url);
+                            } catch {
+                              alert('Không có quyền tải file');
+                            }
+                          }}
+                        >
+                          📎 {m.fileName}
+                        </button>
+                      )}
+
+
+                      <div className={styles.timestamp}>
+                        {formatTime(m.sentAt)}
+                      </div>
                     </div>
+
                   </div>
                 ))}
               <div ref={messagesEndRef} />

@@ -9,11 +9,19 @@ import com.hometech.hometech.model.Conversation;
 import com.hometech.hometech.model.Customer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
+@Transactional
 public class ConversationService {
 
     private final ConversationRepository conversationRepository;
@@ -49,27 +57,48 @@ public class ConversationService {
         }
         return c;
     }
-
     @Transactional
-    public ChatMessage sendMessage(Long conversationId,
-                                   SenderType senderType,
-                                   Long senderId,
-                                   String content) {
-        Conversation c = conversationRepository.findById(conversationId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+    public ChatMessage sendMessage(
+            Long conversationId,
+            SenderType senderType,
+            Long senderId,
+            String content,
+            MultipartFile file
+    ) {
+        ChatMessage message = new ChatMessage();
 
-        ChatMessage msg = new ChatMessage();
-        msg.setConversation(c);
-        msg.setSenderType(senderType);
-        msg.setSenderId(senderId);
-        msg.setContent(content.trim());
+        message.setSenderType(senderType);
+        message.setSenderId(senderId);
+        message.setContent(content);
+        // sentAt & read sẽ set trong @PrePersist
 
-        ChatMessage saved = chatMessageRepository.save(msg);
+        // 🔥 FIX QUAN TRỌNG NHẤT
+        Conversation conversation = conversationRepository
+                .findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Conversation not found"));
 
-        c.setLastMessageAt(saved.getSentAt());
-        conversationRepository.save(c);
+        message.setConversation(conversation);
 
-        return saved;
+        if (file != null && !file.isEmpty()) {
+            try {
+                String storedName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+
+                Path uploadDir = Paths.get("uploads/chat");
+                Files.createDirectories(uploadDir);
+
+                Path filePath = uploadDir.resolve(storedName);
+                Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                message.setFileData(file.getBytes());
+                message.setFileName(file.getOriginalFilename());
+                message.setFileContentType(file.getContentType());
+
+            } catch (IOException e) {
+                throw new RuntimeException("Lỗi khi lưu file chat", e);
+            }
+        }
+
+        return chatMessageRepository.save(message);
     }
 
     @Transactional(readOnly = true)
@@ -103,6 +132,11 @@ public class ConversationService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
         return chatMessageRepository.findByConversationOrderBySentAtAsc(c);
     }
+    public ChatMessage getMessageById(Long messageId) {
+    return chatMessageRepository.findById(messageId)
+            .orElseThrow(() -> new RuntimeException("Không tìm thấy tin nhắn"));
+}
+
 }
 
 

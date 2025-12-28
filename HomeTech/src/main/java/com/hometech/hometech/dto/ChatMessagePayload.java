@@ -7,7 +7,28 @@ public class ChatMessagePayload {
     private Long senderId;
     private String content;
     private java.time.LocalDateTime sentAt;
+    private boolean hasFile;
+    private String fileName;
+    private String fileContentType;
 
+    public boolean isHasFile() {
+        return hasFile;
+    }
+    public void setHasFile(boolean hasFile) {
+        this.hasFile = hasFile;
+    }
+    public String getFileName() {
+        return fileName;
+    }
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+    public String getFileContentType() {
+        return fileContentType;
+    }
+    public void setFileContentType(String fileContentType) {
+        this.fileContentType = fileContentType;
+    }
     public Long getId() {
         return id;
     }

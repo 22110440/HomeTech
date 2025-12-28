@@ -20,11 +20,61 @@
   justify-content: center;
   transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
+.chatImage {
+  max-width: 180px;
+  border-radius: 8px;
+  margin-top: 6px;
+}
+.filePreview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f3f4f6;
+  border-top: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  font-size: 13px;
+}
 
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.removeFile {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #ef4444;
+}
 .fab:hover {
   background: #0f172a;
   transform: translateY(-1px);
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.28);
+}
+/* Ảnh nằm dưới bubble, KHÔNG nền */
+.imageWrapper {
+  margin-top: 6px;
+  max-width: 220px;
+  cursor: pointer;
+}
+
+/* Ảnh preview giống Messenger */
+.chatImageStandalone {
+  width: 100%;
+  border-radius: 14px;
+  display: block;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Link file */
+.fileLink {
+  margin-top: 6px;
+  font-size: 14px;
+  text-decoration: none;
+  color: #2563eb;
 }
 
 .badge {
@@ -95,10 +145,16 @@
 
 .bubble {
   max-width: 75%;
+  width: fit-content;
   padding: 8px 12px;
   border-radius: 999px;
   font-size: 14px;
   line-height: 1.4;
+
+  display: inline-block;      /* thay cho fit-content */
+  white-space: pre-wrap;      /* giữ xuống dòng */
+  word-break: break-word;     /* không cắt chữ */
+  overflow-wrap: anywhere;    /* chống mất chữ */
 }
 
 .messageCustomer .bubble {

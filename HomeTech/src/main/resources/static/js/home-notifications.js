@@ -128,7 +128,8 @@ function initNotifications() {
     if (typeof SockJS !== 'undefined' && typeof Stomp !== 'undefined') {
         console.log('🔌 Connecting to WebSocket...');
         try {
-            const socket = new SockJS('/ws');
+            const socket = new SockJS('http://localhost:8080/ws');
+
             const stompClient = Stomp.over(socket);
             stompClient.connect({}, function() {
                 console.log('✅ WebSocket connected!');

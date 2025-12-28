@@ -249,7 +249,8 @@ function initWebSocket() {
     
     try {
         console.log('🔌 Connecting to WebSocket...');
-        const socket = new SockJS('/ws');
+        const socket = new SockJS('http://localhost:8080/ws');
+
         const stompClient = Stomp.over(socket);
         
         stompClient.connect({}, function() {

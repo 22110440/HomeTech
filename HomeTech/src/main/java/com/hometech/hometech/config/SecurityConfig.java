@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -112,7 +113,9 @@ public class SecurityConfig {
                                 "/api/admin/**"
                         ).hasRole("ADMIN")
                         // Chat API requires authenticated (customer or admin) via JWT
+                        .requestMatchers(HttpMethod.POST, "/api/chat/messages").authenticated()
                         .requestMatchers("/api/chat/**").authenticated()
+
                         // Public catalogue/content APIs
                         .requestMatchers(
                                 "/api/products/**",
@@ -137,11 +140,16 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            response.setContentType("application/json");
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.getOutputStream().println("{ \"error\": \"Unauthorized - Invalid or missing JWT\" }");
+                            if (!response.isCommitted()) {
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                response.setContentType("application/json");
+                                response.getWriter()
+                                        .write("{\"error\":\"Unauthorized - Invalid or missing JWT\"}");
+                            }
                         })
                 )
+
+
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authenticationProvider(authenticationProvider());
 
