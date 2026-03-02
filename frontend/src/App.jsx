@@ -18,6 +18,7 @@ import NotificationBell from './components/NotificationBell';
 import ChatWidget from './components/ChatWidget';
 import VnPayResult from './pages/VnPayResult';
 import PayOsResult from './pages/PayOsResult';
+import RepairBooking from './pages/RepairBooking';
 import './App.css';
 
 function AppRoutes() {
@@ -54,6 +55,7 @@ function AppRoutes() {
         <Route path="/payment/vnpay/result" element={<VnPayResult />} />
         <Route path="/payment/payos/result" element={<PayOsResult />} />
         <Route path="/favorites" element={<Favorites />} />
+        <Route path="/repair-booking" element={<RepairBooking />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
