@@ -781,6 +781,34 @@ export const userAPI = {
     return response.data;
   },
 
+
+  // Repair packages & bookings
+  getRepairPackages: async (phoneType = null) => {
+    const response = await api.get('/repair-packages', {
+      params: phoneType ? { phoneType } : {}
+    });
+    return response.data;
+  },
+
+  createRepairBooking: async (payload) => {
+    const response = await api.post('/repair-bookings', payload);
+    return response.data;
+  },
+
+  getRepairHistory: async (customerId) => {
+    const response = await api.get(`/repair-bookings/history/${customerId}`);
+    return response.data;
+  },
+
+  createRepairVnPayPayment: async (bookingId) => {
+    const response = await api.post(`/repair-bookings/${bookingId}/payment/vnpay`);
+    return response.data;
+  },
+
+  createRepairPayOsPayment: async (bookingId) => {
+    const response = await api.post(`/repair-bookings/${bookingId}/payment/payos`);
+    return response.data;
+  },
   // Expenses
   getExpenses: async (userId, startDate, endDate, groupBy = 'DAY') => {
     const response = await api.get('/orders/my-expenses', {
