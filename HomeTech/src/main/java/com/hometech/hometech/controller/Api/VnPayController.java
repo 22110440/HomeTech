@@ -7,6 +7,7 @@ import com.hometech.hometech.dto.VnPayReturnResponse;
 import com.hometech.hometech.enums.PaymentMethod;
 import com.hometech.hometech.model.Order;
 import com.hometech.hometech.model.Payment;
+import com.hometech.hometech.service.RepairBookingService;
 import com.hometech.hometech.service.VnPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,16 +26,19 @@ public class VnPayController {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final VnPayService vnPayService;
+    private final RepairBookingService repairBookingService;
 
     @Value("${frontend.base-url:http://localhost:5173}")
     private String frontendBaseUrl;
 
     public VnPayController(OrderRepository orderRepository,
                            PaymentRepository paymentRepository,
-                           VnPayService vnPayService) {
+                           VnPayService vnPayService,
+                           RepairBookingService repairBookingService) {
         this.orderRepository = orderRepository;
         this.paymentRepository = paymentRepository;
         this.vnPayService = vnPayService;
+        this.repairBookingService = repairBookingService;
     }
 
     @PostMapping("/api/payment/vnpay/create")
@@ -136,6 +140,16 @@ public class VnPayController {
         builder.queryParam("txnRef", vnPayResponse.getTxnRef());
         if (success) {
             builder.queryParam("redirect", "orders");
+        } else if (vnPayResponse.getTxnRef() != null) {
+            try {
+                repairBookingService.markPaidByTxnRef(vnPayResponse.getTxnRef(), null);
+                builder.queryParam("source", "repair");
+                builder.queryParam("redirect", "repair-booking");
+                success = true;
+                builder.replaceQueryParam("success", true);
+                builder.replaceQueryParam("message", "Thanh toán sửa chữa thành công");
+            } catch (RuntimeException ignored) {
+            }
         }
 
         // encode() để Spring tự mã hóa toàn bộ query param (khoảng trắng, tiếng Việt, v.v.)

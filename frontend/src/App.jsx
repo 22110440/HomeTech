@@ -18,14 +18,23 @@ import NotificationBell from './components/NotificationBell';
 import ChatWidget from './components/ChatWidget';
 import VnPayResult from './pages/VnPayResult';
 import PayOsResult from './pages/PayOsResult';
+import CustomerHeader from './components/CustomerHeader';
+import RepairBooking from './pages/RepairBooking';
+import RepairPackages from './pages/RepairPackages';
+import RepairPackageDetail from './pages/RepairPackageDetail';
+import RepairSchedules from './pages/RepairSchedules';
+import TradeIn from './pages/TradeIn';
 import './App.css';
 
 function AppRoutes() {
   const location = useLocation();
-  const isAdminRoute = location.pathname.toLowerCase().startsWith('/admin');
+  const path = location.pathname.toLowerCase();
+  const isAdminRoute = path.startsWith('/admin');
+  const hideCustomerHeader = ['/login', '/register', '/forgot-password', '/reset-password', '/admin/login', '/adminlogin'].includes(path);
 
   return (
     <>
+      {!isAdminRoute && !hideCustomerHeader && <CustomerHeader />}
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
@@ -54,6 +63,11 @@ function AppRoutes() {
         <Route path="/payment/vnpay/result" element={<VnPayResult />} />
         <Route path="/payment/payos/result" element={<PayOsResult />} />
         <Route path="/favorites" element={<Favorites />} />
+        <Route path="/repair-booking" element={<RepairBooking />} />
+        <Route path="/repair-packages" element={<RepairPackages />} />
+        <Route path="/repair-packages/:id" element={<RepairPackageDetail />} />
+        <Route path="/my-repair-schedules" element={<RepairSchedules />} />
+        <Route path="/trade-in" element={<TradeIn />} />
 
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
