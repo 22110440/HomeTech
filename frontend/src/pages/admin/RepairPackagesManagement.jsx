@@ -14,6 +14,8 @@ const emptyForm = {
 
 export default function RepairPackagesManagement() {
   const [items, setItems] = useState([]);
+  const [phoneCategories, setPhoneCategories] = useState([]);
+  const [serviceCategories, setServiceCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -24,8 +26,14 @@ export default function RepairPackagesManagement() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const response = await adminAPI.getAllRepairPackagesAdmin();
+      const [response, phoneRes, serviceRes] = await Promise.all([
+        adminAPI.getAllRepairPackagesAdmin(),
+        adminAPI.getAllRepairPhoneCategoriesAdmin(),
+        adminAPI.getAllRepairServiceCategoriesAdmin(),
+      ]);
       setItems(response?.data || []);
+      setPhoneCategories((phoneRes?.data || []).filter((item) => item.active));
+      setServiceCategories((serviceRes?.data || []).filter((item) => item.active));
     } catch (err) {
       setError('Không thể tải danh sách gói sửa chữa');
     } finally {
@@ -161,8 +169,18 @@ export default function RepairPackagesManagement() {
             <div className={styles.modalHeader}><h2>{editingId ? 'Cập nhật gói' : 'Thêm gói sửa chữa'}</h2></div>
             <form className={styles.form} onSubmit={handleSubmit}>
               <input placeholder="Tên gói (VD: Sửa pin iPhone X)" value={form.serviceName} onChange={(e) => setForm((p) => ({ ...p, serviceName: e.target.value }))} required />
-              <input placeholder="Loại máy (VD: iPhone X)" value={form.phoneType} onChange={(e) => setForm((p) => ({ ...p, phoneType: e.target.value }))} required />
-              <input placeholder="Danh mục dịch vụ (VD: Thay màn hình)" value={form.serviceCategory} onChange={(e) => setForm((p) => ({ ...p, serviceCategory: e.target.value }))} required />
+              <select value={form.phoneType} onChange={(e) => setForm((p) => ({ ...p, phoneType: e.target.value }))} required>
+                <option value="">Chọn danh mục điện thoại</option>
+                {phoneCategories.map((item) => (
+                  <option key={item.id} value={item.name}>{item.name}</option>
+                ))}
+              </select>
+              <select value={form.serviceCategory} onChange={(e) => setForm((p) => ({ ...p, serviceCategory: e.target.value }))} required>
+                <option value="">Chọn danh mục dịch vụ</option>
+                {serviceCategories.map((item) => (
+                  <option key={item.id} value={item.name}>{item.name}</option>
+                ))}
+              </select>
               <input type="number" placeholder="Giá" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} required />
               <input type="number" placeholder="Thời lượng (phút)" value={form.estimatedDurationMinutes} onChange={(e) => setForm((p) => ({ ...p, estimatedDurationMinutes: e.target.value }))} required />
               <textarea placeholder="Mô tả" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={4} />

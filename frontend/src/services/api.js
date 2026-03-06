@@ -536,6 +536,48 @@ export const adminAPI = {
     return response.data;
   },
 
+
+  // Repair phone categories (admin)
+  getAllRepairPhoneCategoriesAdmin: async () => {
+    const response = await api.get('/admin/repair-phone-categories');
+    return response.data;
+  },
+
+  createRepairPhoneCategoryAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-phone-categories', payload);
+    return response.data;
+  },
+
+  updateRepairPhoneCategoryAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-phone-categories/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairPhoneCategoryAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-phone-categories/${id}`);
+    return response.data;
+  },
+
+  // Repair service categories (admin)
+  getAllRepairServiceCategoriesAdmin: async () => {
+    const response = await api.get('/admin/repair-service-categories');
+    return response.data;
+  },
+
+  createRepairServiceCategoryAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-service-categories', payload);
+    return response.data;
+  },
+
+  updateRepairServiceCategoryAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-service-categories/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairServiceCategoryAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-service-categories/${id}`);
+    return response.data;
+  },
   // Repair categories (admin)
   getAllRepairCategoriesAdmin: async () => {
     const response = await api.get('/admin/repair-categories');
@@ -851,6 +893,17 @@ export const userAPI = {
 
 
   // Repair packages & bookings
+
+  getRepairPhoneCategories: async () => {
+    const response = await api.get('/repair-phone-categories');
+    return response.data;
+  },
+
+  getRepairServiceCategories: async () => {
+    const response = await api.get('/repair-service-categories');
+    return response.data;
+  },
+
   getRepairCategories: async () => {
     const response = await api.get('/repair-categories');
     return response.data;
