@@ -508,6 +508,34 @@ export const adminAPI = {
     return response.data;
   },
 
+  // Repair service packages (admin)
+  getAllRepairPackagesAdmin: async (phoneType = null) => {
+    const response = await api.get('/admin/repair-packages', {
+      params: phoneType ? { phoneType } : {}
+    });
+    return response.data;
+  },
+
+  getRepairPackageByIdAdmin: async (id) => {
+    const response = await api.get(`/admin/repair-packages/${id}`);
+    return response.data;
+  },
+
+  createRepairPackageAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-packages', payload);
+    return response.data;
+  },
+
+  updateRepairPackageAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-packages/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairPackageAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-packages/${id}`);
+    return response.data;
+  },
+
   // Reviews Management
   getAllReviews: async () => {
     const response = await api.get('/reviews/all');
@@ -542,7 +570,6 @@ export const adminAPI = {
     return response.data;
   },
 };
-
 // User API (Public)
 export const userAPI = {
   // Products
