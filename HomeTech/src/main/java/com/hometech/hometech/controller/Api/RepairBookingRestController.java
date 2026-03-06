@@ -49,36 +49,11 @@ public class RepairBookingRestController {
         return ResponseEntity.status(status).body(res);
     }
 
-    private Map<String, Object> toBookingPayload(RepairBooking booking) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("id", booking.getId());
-        payload.put("customerId", booking.getCustomer() != null ? booking.getCustomer().getId() : null);
-        payload.put("customerName", booking.getCustomerName());
-        payload.put("phone", booking.getPhone());
-        payload.put("deviceModel", booking.getDeviceModel());
-        payload.put("appointmentDate", booking.getAppointmentDate());
-        payload.put("appointmentTime", booking.getAppointmentTime());
-        payload.put("note", booking.getNote());
-        payload.put("paymentMethod", booking.getPaymentMethod());
-        payload.put("status", booking.getStatus());
-        payload.put("totalAmount", booking.getTotalAmount());
-        payload.put("createdAt", booking.getCreatedAt());
-        payload.put("updatedAt", booking.getUpdatedAt());
-        payload.put("repairPackage", Map.of(
-                "id", booking.getRepairServicePackage().getId(),
-                "serviceName", booking.getRepairServicePackage().getServiceName(),
-                "phoneType", booking.getRepairServicePackage().getPhoneType(),
-                "serviceCategory", booking.getRepairServicePackage().getServiceCategory(),
-                "price", booking.getRepairServicePackage().getPrice()
-        ));
-        return payload;
-    }
-
     @PostMapping("/api/repair-bookings")
     public ResponseEntity<Map<String, Object>> createRepairBooking(@RequestBody RepairBookingRequest request) {
         try {
             RepairBooking booking = repairBookingService.createBooking(request);
-            return buildResponse(true, "Đặt lịch sửa chữa thành công", toBookingPayload(booking), null, HttpStatus.OK);
+            return buildResponse(true, "Đặt lịch sửa chữa thành công", booking, null, HttpStatus.OK);
         } catch (RuntimeException e) {
             return buildResponse(false, "Đặt lịch sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -86,45 +61,8 @@ public class RepairBookingRestController {
 
     @GetMapping("/api/repair-bookings/history/{customerId}")
     public ResponseEntity<Map<String, Object>> getHistory(@PathVariable Long customerId) {
-        List<Map<String, Object>> history = repairBookingService.getBookingHistory(customerId).stream().map(this::toBookingPayload).toList();
+        List<RepairBooking> history = repairBookingService.getBookingHistory(customerId);
         return buildResponse(true, "Lấy lịch sử sửa chữa thành công", history, null, HttpStatus.OK);
-    }
-
-    @GetMapping("/api/admin/repair-bookings")
-    public ResponseEntity<Map<String, Object>> getAllBookingsForAdmin() {
-        List<Map<String, Object>> data = repairBookingService.getAllBookingsForAdmin().stream().map(this::toBookingPayload).toList();
-        return buildResponse(true, "Lấy lịch sửa chữa thành công", data, null, HttpStatus.OK);
-    }
-
-    @PostMapping("/api/admin/repair-bookings")
-    public ResponseEntity<Map<String, Object>> createBookingByAdmin(@RequestBody RepairBookingRequest request) {
-        try {
-            RepairBooking booking = repairBookingService.createBookingByAdmin(request);
-            return buildResponse(true, "Admin thêm lịch sửa chữa thành công", toBookingPayload(booking), null, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return buildResponse(false, "Admin thêm lịch sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @PutMapping("/api/admin/repair-bookings/{bookingId}")
-    public ResponseEntity<Map<String, Object>> updateBookingByAdmin(@PathVariable Long bookingId,
-                                                                    @RequestBody RepairBookingRequest request) {
-        try {
-            RepairBooking booking = repairBookingService.updateBookingByAdmin(bookingId, request);
-            return buildResponse(true, "Cập nhật lịch sửa chữa thành công", toBookingPayload(booking), null, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return buildResponse(false, "Cập nhật lịch sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @DeleteMapping("/api/admin/repair-bookings/{bookingId}")
-    public ResponseEntity<Map<String, Object>> deleteBookingByAdmin(@PathVariable Long bookingId) {
-        try {
-            repairBookingService.deleteBookingByAdmin(bookingId);
-            return buildResponse(true, "Xóa lịch sửa chữa thành công", null, null, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return buildResponse(false, "Xóa lịch sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
     }
 
     @PostMapping("/api/repair-bookings/{bookingId}/payment/vnpay")
@@ -175,8 +113,7 @@ public class RepairBookingRestController {
         if (success && vnPayResponse.getTxnRef() != null) {
             try {
                 repairBookingService.markPaidByTxnRef(vnPayResponse.getTxnRef(), null);
-            } catch (RuntimeException ignored) {
-            }
+            } catch (RuntimeException ignored) {}
         }
 
         String redirectUrl = UriComponentsBuilder
@@ -202,8 +139,7 @@ public class RepairBookingRestController {
         if (success && orderCode != null) {
             try {
                 repairBookingService.markPaidByTxnRef(orderCode, null);
-            } catch (RuntimeException ignored) {
-            }
+            } catch (RuntimeException ignored) {}
         }
 
         String redirectUrl = UriComponentsBuilder

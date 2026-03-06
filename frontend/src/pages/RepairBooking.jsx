@@ -200,7 +200,7 @@ function RepairBooking() {
             <select name="servicePackage" value={formData.servicePackage} onChange={handleChange} required>
               <option value="">-- Chọn gói --</option>
               {packages.map((pkg) => (
-                <option key={pkg.id} value={pkg.id}>{pkg.serviceName} ({pkg.phoneType} / {pkg.serviceCategory}) - {formatCurrency(pkg.price)}</option>
+                <option key={pkg.id} value={pkg.id}>{pkg.serviceName} ({pkg.phoneType}) - {formatCurrency(pkg.price)}</option>
               ))}
             </select>
           </label>
@@ -238,7 +238,7 @@ function RepairBooking() {
               <article key={booking.id} className={styles.historyItem}>
                 <div>
                   <h3>{booking.customerName} - {booking.deviceModel}</h3>
-                  <p>{booking.repairPackage?.serviceName} ({booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory})</p>
+                  <p>{booking.repairServicePackage?.serviceName} ({booking.repairServicePackage?.phoneType})</p>
                   <p>Thanh toán: {booking.paymentMethod}</p>
                 </div>
                 <div className={styles.historyMeta}>

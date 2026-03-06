@@ -9,7 +9,6 @@ import UsersManagement from './UsersManagement';
 import ProductsManagement from './ProductsManagement';
 import VouchersManagement from './VouchersManagement';
 import RepairPackagesManagement from './RepairPackagesManagement';
-import RepairSchedulesManagement from './RepairSchedulesManagement';
 import RevenueStatistics from './RevenueStatistics';
 import BannerSliderManagement from './BannerSliderManagement';
 import ChatManagement from './ChatManagement';
@@ -84,8 +83,6 @@ function AdminDashboard() {
         return <VouchersManagement />;
       case 'repairPackages':
         return <RepairPackagesManagement />;
-      case 'repairSchedules':
-        return <RepairSchedulesManagement />;
       case 'revenue':
         return <RevenueStatistics />;
       case 'marketing':
@@ -157,16 +154,6 @@ function AdminDashboard() {
             </svg>
             <span>Gói sửa chữa</span>
           </button>
-          <button
-            className={`${styles.navItem} ${activeTab === 'repairSchedules' ? styles.active : ''}`}
-            onClick={() => setActiveTab('repairSchedules')}
-          >
-            <svg className={styles.navIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>Lịch sửa chữa</span>
-          </button>
-
           <button
             className={`${styles.navItem} ${activeTab === 'users' ? styles.active : ''}`}
             onClick={() => setActiveTab('users')}

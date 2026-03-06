@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 
 public class RepairServicePackageRequest {
     private String phoneType;
-    private String serviceCategory;
     private String serviceName;
     private String description;
     private BigDecimal price;
@@ -17,14 +16,6 @@ public class RepairServicePackageRequest {
 
     public void setPhoneType(String phoneType) {
         this.phoneType = phoneType;
-    }
-
-    public String getServiceCategory() {
-        return serviceCategory;
-    }
-
-    public void setServiceCategory(String serviceCategory) {
-        this.serviceCategory = serviceCategory;
     }
 
     public String getServiceName() {

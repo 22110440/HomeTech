@@ -16,9 +16,6 @@ public class RepairServicePackage {
     @Column(nullable = false, length = 100)
     private String phoneType;
 
-    @Column(nullable = false, length = 100)
-    private String serviceCategory;
-
     @Column(nullable = false, length = 150)
     private String serviceName;
 
@@ -69,14 +66,6 @@ public class RepairServicePackage {
 
     public void setPhoneType(String phoneType) {
         this.phoneType = phoneType;
-    }
-
-    public String getServiceCategory() {
-        return serviceCategory;
-    }
-
-    public void setServiceCategory(String serviceCategory) {
-        this.serviceCategory = serviceCategory;
     }
 
     public String getServiceName() {

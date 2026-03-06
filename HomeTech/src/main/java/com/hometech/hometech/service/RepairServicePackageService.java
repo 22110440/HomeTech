@@ -61,7 +61,6 @@ public class RepairServicePackageService {
 
     private void applyRequestToEntity(RepairServicePackage entity, RepairServicePackageRequest request) {
         entity.setPhoneType(request.getPhoneType().trim());
-        entity.setServiceCategory(request.getServiceCategory().trim());
         entity.setServiceName(request.getServiceName().trim());
         entity.setDescription(request.getDescription() == null ? null : request.getDescription().trim());
         entity.setPrice(request.getPrice());
@@ -72,10 +71,6 @@ public class RepairServicePackageService {
     private void validateRequest(RepairServicePackageRequest request) {
         if (request.getPhoneType() == null || request.getPhoneType().trim().isEmpty()) {
             throw new RuntimeException("Loại điện thoại không được để trống");
-        }
-
-        if (request.getServiceCategory() == null || request.getServiceCategory().trim().isEmpty()) {
-            throw new RuntimeException("Danh mục dịch vụ không được để trống");
         }
 
         if (request.getServiceName() == null || request.getServiceName().trim().isEmpty()) {

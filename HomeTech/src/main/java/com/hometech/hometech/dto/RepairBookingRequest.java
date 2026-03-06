@@ -1,7 +1,6 @@
 package com.hometech.hometech.dto;
 
 import com.hometech.hometech.enums.PaymentMethod;
-import com.hometech.hometech.enums.RepairBookingStatus;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -16,7 +15,6 @@ public class RepairBookingRequest {
     private LocalTime appointmentTime;
     private String note;
     private PaymentMethod paymentMethod;
-    private RepairBookingStatus status;
 
     public Long getCustomerId() { return customerId; }
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
@@ -36,6 +34,4 @@ public class RepairBookingRequest {
     public void setNote(String note) { this.note = note; }
     public PaymentMethod getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
-    public RepairBookingStatus getStatus() { return status; }
-    public void setStatus(RepairBookingStatus status) { this.status = status; }
 }

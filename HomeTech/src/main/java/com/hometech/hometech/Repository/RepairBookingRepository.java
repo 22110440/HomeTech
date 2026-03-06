@@ -9,5 +9,4 @@ import java.util.Optional;
 public interface RepairBookingRepository extends JpaRepository<RepairBooking, Long> {
     List<RepairBooking> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
     Optional<RepairBooking> findByPaymentTxnRef(String paymentTxnRef);
-    List<RepairBooking> findAllByOrderByAppointmentDateAscAppointmentTimeAsc();
 }

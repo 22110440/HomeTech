@@ -71,7 +71,6 @@ export default function RepairPackageDetail() {
         <Link to="/repair-packages">← Quay lại danh sách</Link>
       </header>
       <p><strong>Loại máy:</strong> {detail.phoneType}</p>
-      <p><strong>Danh mục dịch vụ:</strong> {detail.serviceCategory}</p>
       <p><strong>Giá:</strong> {Number(detail.price || 0).toLocaleString('vi-VN')} đ</p>
       <p>{detail.description}</p>
 
