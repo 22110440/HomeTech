@@ -536,6 +536,26 @@ export const adminAPI = {
     return response.data;
   },
 
+  getAllRepairBookingsAdmin: async () => {
+    const response = await api.get('/admin/repair-bookings');
+    return response.data;
+  },
+
+  createRepairBookingAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-bookings', payload);
+    return response.data;
+  },
+
+  updateRepairBookingAdmin: async (bookingId, payload) => {
+    const response = await api.put(`/admin/repair-bookings/${bookingId}`, payload);
+    return response.data;
+  },
+
+  deleteRepairBookingAdmin: async (bookingId) => {
+    const response = await api.delete(`/admin/repair-bookings/${bookingId}`);
+    return response.data;
+  },
+
   // Reviews Management
   getAllReviews: async () => {
     const response = await api.get('/reviews/all');
@@ -814,6 +834,11 @@ export const userAPI = {
     const response = await api.get('/repair-packages', {
       params: phoneType ? { phoneType } : {}
     });
+    return response.data;
+  },
+
+  getRepairPackageDetail: async (id) => {
+    const response = await api.get(`/repair-packages/${id}`);
     return response.data;
   },
 

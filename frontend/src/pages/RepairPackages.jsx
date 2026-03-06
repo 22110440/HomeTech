@@ -38,6 +38,7 @@ export default function RepairPackages() {
             <article key={item.id} className={styles.card}>
               <h3>{item.serviceName}</h3>
               <p>Loại máy: {item.phoneType}</p>
+              <p>Danh mục: {item.serviceCategory}</p>
               <p>{item.description}</p>
               <strong>{Number(item.price || 0).toLocaleString('vi-VN')} đ</strong>
               <Link to={`/repair-packages/${item.id}`} className={styles.btn}>Xem chi tiết</Link>

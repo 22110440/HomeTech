@@ -6,3 +6,10 @@
 .btn { background:#2563eb; color:#fff; border:none; border-radius:8px; text-decoration:none; padding:10px 12px; display:inline-block; width:max-content; cursor:pointer; }
 .form { display:grid; gap:10px; max-width:560px; }
 .form input,.form select,.form textarea { border:1px solid #ddd; border-radius:8px; padding:10px; }
+
+
+.tableWrap { overflow: auto; margin-top: 16px; }
+.tableCalendar { width: 100%; border-collapse: collapse; min-width: 900px; }
+.tableCalendar th, .tableCalendar td { border: 1px solid #cfcfcf; padding: 8px; vertical-align: top; background: #f3f3f3; }
+.tableCalendar th { background: #145a86; color: #fff; }
+.scheduleCard { background: #cfe7f7; border-radius: 8px; padding: 8px; margin-bottom: 8px; }

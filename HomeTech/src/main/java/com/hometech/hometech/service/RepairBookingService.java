@@ -30,42 +30,36 @@ public class RepairBookingService {
     }
 
     public RepairBooking createBooking(RepairBookingRequest request) {
-        validateRequest(request);
-
-        Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
-
-        RepairServicePackage pkg = repairServicePackageRepository.findById(request.getRepairPackageId())
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy gói dịch vụ"));
-
-        if (!Boolean.TRUE.equals(pkg.getActive())) {
-            throw new RuntimeException("Gói dịch vụ hiện không hoạt động");
-        }
-
-        RepairBooking booking = new RepairBooking();
-        booking.setCustomer(customer);
-        booking.setRepairServicePackage(pkg);
-        booking.setCustomerName(request.getCustomerName().trim());
-        booking.setPhone(request.getPhone().trim());
-        booking.setDeviceModel(request.getDeviceModel().trim());
-        booking.setAppointmentDate(request.getAppointmentDate());
-        booking.setAppointmentTime(request.getAppointmentTime());
-        booking.setNote(request.getNote());
-        booking.setPaymentMethod(request.getPaymentMethod());
-        booking.setTotalAmount(pkg.getPrice().doubleValue());
-
-        if (request.getPaymentMethod() == PaymentMethod.COD) {
-            booking.setStatus(RepairBookingStatus.PENDING);
-        } else {
-            booking.setStatus(RepairBookingStatus.WAITING_PAYMENT);
-        }
-
+        validateRequest(request, false);
+        RepairBooking booking = buildBookingFromRequest(new RepairBooking(), request, false);
         return repairBookingRepository.save(booking);
+    }
+
+    public RepairBooking createBookingByAdmin(RepairBookingRequest request) {
+        validateRequest(request, true);
+        RepairBooking booking = buildBookingFromRequest(new RepairBooking(), request, true);
+        return repairBookingRepository.save(booking);
+    }
+
+    public RepairBooking updateBookingByAdmin(Long bookingId, RepairBookingRequest request) {
+        validateRequest(request, true);
+        RepairBooking existing = getBookingById(bookingId);
+        RepairBooking updated = buildBookingFromRequest(existing, request, true);
+        return repairBookingRepository.save(updated);
+    }
+
+    public void deleteBookingByAdmin(Long bookingId) {
+        RepairBooking existing = getBookingById(bookingId);
+        repairBookingRepository.delete(existing);
     }
 
     public RepairBooking getBookingById(Long id) {
         return repairBookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sửa chữa"));
+    }
+
+    public List<RepairBooking> getAllBookingsForAdmin() {
+        return repairBookingRepository.findAllByOrderByAppointmentDateAscAppointmentTimeAsc();
     }
 
     public List<RepairBooking> getBookingHistory(Long customerId) {
@@ -86,13 +80,47 @@ public class RepairBookingService {
         return repairBookingRepository.save(booking);
     }
 
-    private void validateRequest(RepairBookingRequest request) {
+    private RepairBooking buildBookingFromRequest(RepairBooking booking, RepairBookingRequest request, boolean adminMode) {
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));
+
+        RepairServicePackage pkg = repairServicePackageRepository.findById(request.getRepairPackageId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy gói dịch vụ"));
+
+        if (!Boolean.TRUE.equals(pkg.getActive()) && !adminMode) {
+            throw new RuntimeException("Gói dịch vụ hiện không hoạt động");
+        }
+
+        booking.setCustomer(customer);
+        booking.setRepairServicePackage(pkg);
+        booking.setCustomerName(request.getCustomerName().trim());
+        booking.setPhone(request.getPhone().trim());
+        booking.setDeviceModel(request.getDeviceModel().trim());
+        booking.setAppointmentDate(request.getAppointmentDate());
+        booking.setAppointmentTime(request.getAppointmentTime());
+        booking.setNote(request.getNote());
+        booking.setPaymentMethod(request.getPaymentMethod());
+        booking.setTotalAmount(pkg.getPrice().doubleValue());
+
+        if (adminMode && request.getStatus() != null) {
+            booking.setStatus(request.getStatus());
+        } else if (request.getPaymentMethod() == PaymentMethod.COD) {
+            booking.setStatus(RepairBookingStatus.PENDING);
+        } else {
+            booking.setStatus(RepairBookingStatus.WAITING_PAYMENT);
+        }
+
+        return booking;
+    }
+
+    private void validateRequest(RepairBookingRequest request, boolean adminMode) {
         if (request.getCustomerId() == null) throw new RuntimeException("Thiếu customerId");
         if (request.getRepairPackageId() == null) throw new RuntimeException("Thiếu repairPackageId");
         if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty()) throw new RuntimeException("Tên khách hàng không được để trống");
         if (request.getPhone() == null || request.getPhone().trim().isEmpty()) throw new RuntimeException("Số điện thoại không được để trống");
         if (request.getDeviceModel() == null || request.getDeviceModel().trim().isEmpty()) throw new RuntimeException("Dòng máy không được để trống");
-        if (request.getAppointmentDate() == null || request.getAppointmentDate().isBefore(LocalDate.now())) throw new RuntimeException("Ngày hẹn không hợp lệ");
+        if (request.getAppointmentDate() == null) throw new RuntimeException("Ngày hẹn không hợp lệ");
+        if (!adminMode && request.getAppointmentDate().isBefore(LocalDate.now())) throw new RuntimeException("Ngày hẹn không hợp lệ");
         if (request.getAppointmentTime() == null) throw new RuntimeException("Giờ hẹn không được để trống");
         if (request.getPaymentMethod() == null) throw new RuntimeException("Thiếu phương thức thanh toán");
         if (request.getPaymentMethod() != PaymentMethod.COD

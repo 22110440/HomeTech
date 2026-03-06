@@ -59,7 +59,7 @@ export default function RepairPackageDetail() {
       if (pay?.success && pay.checkoutUrl) window.location.href = pay.checkoutUrl;
       return;
     }
-    navigate('/repair-booking');
+    navigate('/my-repair-schedules');
   };
 
   if (!detail) return <div className={styles.page}><p>Đang tải chi tiết...</p></div>;
@@ -71,6 +71,7 @@ export default function RepairPackageDetail() {
         <Link to="/repair-packages">← Quay lại danh sách</Link>
       </header>
       <p><strong>Loại máy:</strong> {detail.phoneType}</p>
+      <p><strong>Danh mục dịch vụ:</strong> {detail.serviceCategory}</p>
       <p><strong>Giá:</strong> {Number(detail.price || 0).toLocaleString('vi-VN')} đ</p>
       <p>{detail.description}</p>
 

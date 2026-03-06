@@ -5,6 +5,7 @@ import styles from './VouchersManagement.module.css';
 const emptyForm = {
   phoneType: '',
   serviceName: '',
+  serviceCategory: '',
   description: '',
   price: '',
   estimatedDurationMinutes: '',
@@ -55,6 +56,7 @@ export default function RepairPackagesManagement() {
     setForm({
       phoneType: item.phoneType || '',
       serviceName: item.serviceName || '',
+      serviceCategory: item.serviceCategory || '',
       description: item.description || '',
       price: item.price ?? '',
       estimatedDurationMinutes: item.estimatedDurationMinutes ?? '',
@@ -69,6 +71,7 @@ export default function RepairPackagesManagement() {
       const payload = {
         phoneType: form.phoneType,
         serviceName: form.serviceName,
+        serviceCategory: form.serviceCategory,
         description: form.description,
         price: Number(form.price),
         estimatedDurationMinutes: Number(form.estimatedDurationMinutes),
@@ -125,6 +128,7 @@ export default function RepairPackagesManagement() {
               <th>ID</th>
               <th>Tên gói</th>
               <th>Loại máy</th>
+              <th>Danh mục dịch vụ</th>
               <th>Giá</th>
               <th>Thời lượng</th>
               <th>Trạng thái</th>
@@ -137,6 +141,7 @@ export default function RepairPackagesManagement() {
                 <td>{item.id}</td>
                 <td>{item.serviceName}</td>
                 <td>{item.phoneType}</td>
+                <td>{item.serviceCategory}</td>
                 <td>{Number(item.price || 0).toLocaleString('vi-VN')} đ</td>
                 <td>{item.estimatedDurationMinutes} phút</td>
                 <td>{item.active ? 'Đang mở' : 'Ẩn'}</td>
@@ -157,6 +162,7 @@ export default function RepairPackagesManagement() {
             <form className={styles.form} onSubmit={handleSubmit}>
               <input placeholder="Tên gói (VD: Sửa pin iPhone X)" value={form.serviceName} onChange={(e) => setForm((p) => ({ ...p, serviceName: e.target.value }))} required />
               <input placeholder="Loại máy (VD: iPhone X)" value={form.phoneType} onChange={(e) => setForm((p) => ({ ...p, phoneType: e.target.value }))} required />
+              <input placeholder="Danh mục dịch vụ (VD: Thay màn hình)" value={form.serviceCategory} onChange={(e) => setForm((p) => ({ ...p, serviceCategory: e.target.value }))} required />
               <input type="number" placeholder="Giá" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} required />
               <input type="number" placeholder="Thời lượng (phút)" value={form.estimatedDurationMinutes} onChange={(e) => setForm((p) => ({ ...p, estimatedDurationMinutes: e.target.value }))} required />
               <textarea placeholder="Mô tả" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={4} />
