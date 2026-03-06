@@ -536,6 +536,27 @@ export const adminAPI = {
     return response.data;
   },
 
+  // Repair categories (admin)
+  getAllRepairCategoriesAdmin: async () => {
+    const response = await api.get('/admin/repair-categories');
+    return response.data;
+  },
+
+  createRepairCategoryAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-categories', payload);
+    return response.data;
+  },
+
+  updateRepairCategoryAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-categories/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairCategoryAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-categories/${id}`);
+    return response.data;
+  },
+
   getAllRepairBookingsAdmin: async () => {
     const response = await api.get('/admin/repair-bookings');
     return response.data;
@@ -830,6 +851,11 @@ export const userAPI = {
 
 
   // Repair packages & bookings
+  getRepairCategories: async () => {
+    const response = await api.get('/repair-categories');
+    return response.data;
+  },
+
   getRepairPackages: async (phoneType = null) => {
     const response = await api.get('/repair-packages', {
       params: phoneType ? { phoneType } : {}

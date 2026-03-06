@@ -123,7 +123,8 @@ public class SecurityConfig {
                                 "/api/content/**",
                                 "/api/reviews/**",
                                 "/api/vouchers/**",
-                                "/api/repair-packages/**"
+                                "/api/repair-packages/**",
+                                "/api/repair-categories/**"
                         ).permitAll()
                         // Payment APIs - cho phép PayOS create public (PayOS cần gọi mà không JWT)
                         .requestMatchers("/api/payment/payos/create").permitAll()
