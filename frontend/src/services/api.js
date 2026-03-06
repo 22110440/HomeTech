@@ -817,11 +817,6 @@ export const userAPI = {
     return response.data;
   },
 
-  getRepairPackageDetail: async (id) => {
-    const response = await api.get(`/repair-packages/${id}`);
-    return response.data;
-  },
-
   createRepairBooking: async (payload) => {
     const response = await api.post('/repair-bookings', payload);
     return response.data;
