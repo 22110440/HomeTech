@@ -51,12 +51,12 @@
 
 .conversationItem:hover {
   background: rgba(15, 23, 42, 0.7);
-  border-color: #60a5fa;
+  border-color: #ef4444;
 }
 
 .conversationItemActive {
   background: linear-gradient(90deg, rgba(96, 165, 250, 0.25), rgba(129, 140, 248, 0.25));
-  border-color: #60a5fa;
+  border-color: #ef4444;
 }
 
 .conversationName {
@@ -134,7 +134,7 @@
 }
 
 .messageAdmin .bubble {
-  background: #2563eb;
+  background: #dc2626;
   color: white;
   border-bottom-right-radius: 0.25rem;
 }
@@ -174,7 +174,7 @@
 }
 
 .inputArea input:focus {
-  border-color: #2563eb;
+  border-color: #dc2626;
   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
@@ -182,7 +182,7 @@
   border-radius: 999px;
   border: none;
   padding: 0.5rem 1rem;
-  background: #2563eb;
+  background: #dc2626;
   color: white;
   font-size: 0.9rem;
   font-weight: 500;
@@ -191,7 +191,7 @@
 }
 
 .inputArea button:hover {
-  background: #1d4ed8;
+  background: #b91c1c;
 }
 
 .inputArea button:active {
