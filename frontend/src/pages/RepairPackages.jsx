@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { userAPI } from '../services/api';
 import styles from './RepairPackages.module.css';
 
@@ -28,10 +28,9 @@ export default function RepairPackages() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
+      <div className={styles.header}>
         <h1>Sản phẩm sửa chữa</h1>
-        <Link to="/">← Về trang chủ</Link>
-      </header>
+      </div>
       <input className={styles.search} placeholder="Tìm theo tên gói hoặc dòng máy" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
       {loading ? <p>Đang tải...</p> : (
         <div className={styles.grid}>

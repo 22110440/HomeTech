@@ -1,13 +1,15 @@
-.header { position: sticky; top: 0; z-index: 30; background: #0f4c75; color: #fff; border-bottom: 1px solid #0a3652; }
-.inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 180px 1fr auto; gap: 12px; align-items: center; padding: 12px 16px; }
+.header { position: sticky; top: 0; z-index: 30; background: #b91c1c; color: #fff; border-bottom: 1px solid #7f1d1d; }
+.inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 220px 1fr auto; gap: 12px; align-items: center; padding: 12px 16px; }
+.leftGroup { display: flex; align-items: center; gap: 8px; }
+.backButton { border: 1px solid rgba(255,255,255,0.45); border-radius: 8px; background: rgba(255,255,255,0.12); color: #fff; padding: 7px 10px; cursor: pointer; font-weight: 600; }
 .brand { color: #fff; text-decoration: none; font-weight: 800; font-size: 1.25rem; }
 .searchForm { display: flex; gap: 8px; }
 .searchForm input { flex: 1; border-radius: 8px; border: 0; padding: 10px; }
-.searchForm button { border: 0; border-radius: 8px; background: #ffb703; color: #1f2937; font-weight: 700; padding: 10px 14px; cursor: pointer; }
+.searchForm button { border: 0; border-radius: 8px; background: #fee2e2; color: #7f1d1d; font-weight: 700; padding: 10px 14px; cursor: pointer; }
 .nav { display: flex; gap: 14px; }
 .nav a { color: #fff; text-decoration: none; font-weight: 600; }
-.categoriesBar { border-top: 1px solid rgba(255,255,255,0.2); background: #0a3652; }
+.categoriesBar { border-top: 1px solid rgba(255,255,255,0.2); background: #7f1d1d; }
 .categoriesInner { max-width: 1200px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 12px; overflow-x: auto; }
-.categoryItem { color: #dbeafe; text-decoration: none; font-weight: 500; white-space: nowrap; padding: 4px 8px; border-radius: 999px; }
+.categoryItem { color: #ffe4e6; text-decoration: none; font-weight: 500; white-space: nowrap; padding: 4px 8px; border-radius: 999px; }
 .categoryItem:hover { background: rgba(255,255,255,0.15); color: #fff; }
 @media (max-width: 900px) { .inner { grid-template-columns: 1fr; } .nav { justify-content: space-between; } }

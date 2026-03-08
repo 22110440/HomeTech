@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import api, { userAPI } from '../services/api';
 import styles from './RepairPackages.module.css';
 
@@ -66,10 +66,9 @@ export default function RepairPackageDetail() {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
+      <div className={styles.header}>
         <h1>{detail.serviceName}</h1>
-        <Link to="/repair-packages">← Quay lại danh sách</Link>
-      </header>
+      </div>
       {detail.imageUrl && <img src={detail.imageUrl} alt={detail.serviceName} className={styles.packageImage} />}
       <p><strong>Loại máy:</strong> {detail.phoneType}</p>
       <p><strong>Danh mục dịch vụ:</strong> {detail.serviceCategory}</p>
