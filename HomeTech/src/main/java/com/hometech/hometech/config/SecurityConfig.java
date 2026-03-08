@@ -110,6 +110,15 @@ public class SecurityConfig {
                         // Admin-only APIs
                         .requestMatchers(
                                 "/api/auth/register-admin",
+                                "/api/auth/register-technician"
+                        ).hasRole("ADMIN")
+                        .requestMatchers(
+                                "/api/admin/repair-phone-categories/**",
+                                "/api/admin/repair-service-categories/**",
+                                "/api/admin/repair-packages/**",
+                                "/api/admin/repair-bookings/**"
+                        ).hasAnyRole("ADMIN", "THO")
+                        .requestMatchers(
                                 "/api/admin/**"
                         ).hasRole("ADMIN")
                         // Chat API requires authenticated (customer or admin) via JWT
@@ -122,7 +131,11 @@ public class SecurityConfig {
                                 "/api/categories/**",
                                 "/api/content/**",
                                 "/api/reviews/**",
-                                "/api/vouchers/**"
+                                "/api/vouchers/**",
+                                "/api/repair-packages/**",
+                                "/api/repair-categories/**",
+                                "/api/repair-phone-categories/**",
+                                "/api/repair-service-categories/**"
                         ).permitAll()
                         // Payment APIs - cho phép PayOS create public (PayOS cần gọi mà không JWT)
                         .requestMatchers("/api/payment/payos/create").permitAll()
@@ -197,7 +210,7 @@ public class SecurityConfig {
                                 "/ws/**",
                                 "/test-notification", "/websocket-test"
                         ).permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "THO")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
