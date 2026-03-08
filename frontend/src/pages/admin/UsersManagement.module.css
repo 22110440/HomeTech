@@ -17,7 +17,7 @@
   width: 50px;
   height: 50px;
   border: 4px solid #f3f4f6;
-  border-top-color: #667eea;
+  border-top-color: #dc2626;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -45,7 +45,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: #ffffff;
   border: none;
   border-radius: 0.75rem;
@@ -83,7 +83,7 @@
 }
 
 .searchBox:focus-within {
-  border-color: #667eea;
+  border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -214,7 +214,7 @@
 
 .adminFormGroup input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25);
   background: #ffffff;
 }
@@ -273,7 +273,7 @@
 
 .viewButton {
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -451,7 +451,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -561,7 +561,7 @@
   width: 20px;
   height: 20px;
   border: 3px solid #e5e7eb;
-  border-top-color: #667eea;
+  border-top-color: #dc2626;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -590,7 +590,7 @@
 
 .statusInfo {
   background: rgba(59, 130, 246, 0.15);
-  color: #1d4ed8;
+  color: #b91c1c;
 }
 
 .statusPurple {
