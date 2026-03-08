@@ -7,6 +7,7 @@ const emptyForm = {
   serviceName: '',
   serviceCategory: '',
   description: '',
+  imageUrl: '',
   price: '',
   estimatedDurationMinutes: '',
   active: true
@@ -66,6 +67,7 @@ export default function RepairPackagesManagement() {
       serviceName: item.serviceName || '',
       serviceCategory: item.serviceCategory || '',
       description: item.description || '',
+      imageUrl: item.imageUrl || '',
       price: item.price ?? '',
       estimatedDurationMinutes: item.estimatedDurationMinutes ?? '',
       active: item.active ?? true
@@ -81,6 +83,7 @@ export default function RepairPackagesManagement() {
         serviceName: form.serviceName,
         serviceCategory: form.serviceCategory,
         description: form.description,
+        imageUrl: form.imageUrl,
         price: Number(form.price),
         estimatedDurationMinutes: Number(form.estimatedDurationMinutes),
         active: form.active
@@ -183,6 +186,7 @@ export default function RepairPackagesManagement() {
               </select>
               <input type="number" placeholder="Giá" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} required />
               <input type="number" placeholder="Thời lượng (phút)" value={form.estimatedDurationMinutes} onChange={(e) => setForm((p) => ({ ...p, estimatedDurationMinutes: e.target.value }))} required />
+              <input placeholder="URL ảnh minh họa" value={form.imageUrl} onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))} />
               <textarea placeholder="Mô tả" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={4} />
               <label>
                 <input type="checkbox" checked={form.active} onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))} /> Đang hoạt động

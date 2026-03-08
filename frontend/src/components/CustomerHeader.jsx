@@ -1,15 +1,29 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { userAPI } from '../services/api';
 import styles from './CustomerHeader.module.css';
 
 export default function CustomerHeader() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const res = await userAPI.getAllCategories();
+        setCategories(res?.data || []);
+      } catch {
+        setCategories([]);
+      }
+    };
+    loadCategories();
+  }, []);
 
   const submit = (e) => {
     e.preventDefault();
     const q = keyword.trim();
-    navigate(q ? `/repair-packages?keyword=${encodeURIComponent(q)}` : '/repair-packages');
+    navigate(q ? `/?keyword=${encodeURIComponent(q)}` : '/');
   };
 
   return (
@@ -30,6 +44,18 @@ export default function CustomerHeader() {
           <Link to="/trade-in">Thu cũ đổi mới</Link>
         </nav>
       </div>
+
+      {categories.length > 0 && (
+        <div className={styles.categoriesBar}>
+          <div className={styles.categoriesInner}>
+            {categories.map((category) => (
+              <Link key={category.id} to={`/?category=${category.id}`} className={styles.categoryItem}>
+                {category.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

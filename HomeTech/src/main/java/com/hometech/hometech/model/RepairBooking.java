@@ -1,5 +1,6 @@
 package com.hometech.hometech.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hometech.hometech.enums.PaymentMethod;
 import com.hometech.hometech.enums.RepairBookingStatus;
 import jakarta.persistence.*;
@@ -55,6 +56,21 @@ public class RepairBooking {
     private String paymentTxnRef;
     private String paymentCheckoutUrl;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "technician_account_id")
+    private Account technicianAccount;
+
+    @Column(length = 150)
+    private String technicianName;
+
+    @Column(length = 1000)
+    private String progressNote;
+
+    private LocalDateTime startedAt;
+
+    private LocalDateTime completedAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -101,6 +117,16 @@ public class RepairBooking {
     public void setPaymentTxnRef(String paymentTxnRef) { this.paymentTxnRef = paymentTxnRef; }
     public String getPaymentCheckoutUrl() { return paymentCheckoutUrl; }
     public void setPaymentCheckoutUrl(String paymentCheckoutUrl) { this.paymentCheckoutUrl = paymentCheckoutUrl; }
+    public Account getTechnicianAccount() { return technicianAccount; }
+    public void setTechnicianAccount(Account technicianAccount) { this.technicianAccount = technicianAccount; }
+    public String getTechnicianName() { return technicianName; }
+    public void setTechnicianName(String technicianName) { this.technicianName = technicianName; }
+    public String getProgressNote() { return progressNote; }
+    public void setProgressNote(String progressNote) { this.progressNote = progressNote; }
+    public LocalDateTime getStartedAt() { return startedAt; }
+    public void setStartedAt(LocalDateTime startedAt) { this.startedAt = startedAt; }
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

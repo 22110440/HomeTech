@@ -7,6 +7,7 @@ public class RepairServicePackageRequest {
     private String serviceCategory;
     private String serviceName;
     private String description;
+    private String imageUrl;
     private BigDecimal price;
     private Integer estimatedDurationMinutes;
     private Boolean active;
@@ -41,6 +42,14 @@ public class RepairServicePackageRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public BigDecimal getPrice() {

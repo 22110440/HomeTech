@@ -30,7 +30,7 @@ function AppRoutes() {
   const location = useLocation();
   const path = location.pathname.toLowerCase();
   const isAdminRoute = path.startsWith('/admin');
-  const hideCustomerHeader = ['/login', '/register', '/forgot-password', '/reset-password', '/admin/login', '/adminlogin'].includes(path);
+  const hideCustomerHeader = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/admin/login', '/adminlogin'].includes(path);
 
   return (
     <>

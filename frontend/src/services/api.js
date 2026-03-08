@@ -85,6 +85,15 @@ export const authAPI = {
     return response.data;
   },
 
+  registerTechnician: async (username, email, password) => {
+    const response = await api.post('/auth/register-technician', {
+      username,
+      email,
+      password,
+    });
+    return response.data;
+  },
+
   // Đăng nhập
   login: async (usernameOrEmail, password) => {
     const response = await api.post('/auth/login', {
@@ -616,6 +625,11 @@ export const adminAPI = {
 
   deleteRepairBookingAdmin: async (bookingId) => {
     const response = await api.delete(`/admin/repair-bookings/${bookingId}`);
+    return response.data;
+  },
+
+  updateRepairBookingProgressAdmin: async (bookingId, payload) => {
+    const response = await api.put(`/admin/repair-bookings/${bookingId}/progress`, payload);
     return response.data;
   },
 

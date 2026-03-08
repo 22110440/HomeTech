@@ -110,6 +110,15 @@ public class SecurityConfig {
                         // Admin-only APIs
                         .requestMatchers(
                                 "/api/auth/register-admin",
+                                "/api/auth/register-technician"
+                        ).hasRole("ADMIN")
+                        .requestMatchers(
+                                "/api/admin/repair-phone-categories/**",
+                                "/api/admin/repair-service-categories/**",
+                                "/api/admin/repair-packages/**",
+                                "/api/admin/repair-bookings/**"
+                        ).hasAnyRole("ADMIN", "THO")
+                        .requestMatchers(
                                 "/api/admin/**"
                         ).hasRole("ADMIN")
                         // Chat API requires authenticated (customer or admin) via JWT
@@ -201,7 +210,7 @@ public class SecurityConfig {
                                 "/ws/**",
                                 "/test-notification", "/websocket-test"
                         ).permitAll()
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "THO")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session

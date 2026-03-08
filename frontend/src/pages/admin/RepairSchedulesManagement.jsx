@@ -24,7 +24,8 @@ const emptyForm = {
   appointmentTime: '',
   note: '',
   paymentMethod: 'COD',
-  status: 'PENDING'
+  status: 'PENDING',
+  progressNote: ''
 };
 
 function getSession(timeValue) {
@@ -87,7 +88,8 @@ export default function RepairSchedulesManagement() {
       appointmentTime: booking.appointmentTime || '',
       note: booking.note || '',
       paymentMethod: booking.paymentMethod || 'COD',
-      status: booking.status || 'PENDING'
+      status: booking.status || 'PENDING',
+      progressNote: booking.progressNote || ''
     });
     setShowModal(true);
   };
@@ -104,11 +106,13 @@ export default function RepairSchedulesManagement() {
       appointmentTime: form.appointmentTime,
       note: form.note,
       paymentMethod: form.paymentMethod,
-      status: form.status
+      status: form.status,
+      progressNote: form.progressNote
     };
 
     if (editingId) {
       await adminAPI.updateRepairBookingAdmin(editingId, payload);
+      await adminAPI.updateRepairBookingProgressAdmin(editingId, { status: form.status, progressNote: form.progressNote });
     } else {
       await adminAPI.createRepairBookingAdmin(payload);
     }
@@ -157,6 +161,8 @@ export default function RepairSchedulesManagement() {
                           <div>Danh mục: {booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory}</div>
                           <div>Giờ: {booking.appointmentTime}</div>
                           <div>Trạng thái: {booking.status}</div>
+                          <div>KTV: {booking.technicianName || 'Chưa gán'}</div>
+                          {booking.progressNote && <div>Tiến trình: {booking.progressNote}</div>}
                           <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
                             <button className={styles.actionButton} onClick={() => openEdit(booking)}>Sửa</button>
                             <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => remove(booking.id)}>Xóa</button>
@@ -198,10 +204,12 @@ export default function RepairSchedulesManagement() {
                 <option value="PENDING">PENDING</option>
                 <option value="WAITING_PAYMENT">WAITING_PAYMENT</option>
                 <option value="PAID">PAID</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
                 <option value="CANCELLED">CANCELLED</option>
                 <option value="COMPLETED">COMPLETED</option>
               </select>
               <textarea rows={3} placeholder="Ghi chú" value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} />
+              <textarea rows={3} placeholder="Ghi chú tiến trình" value={form.progressNote} onChange={(e) => setForm((p) => ({ ...p, progressNote: e.target.value }))} />
               <button type="submit" className={styles.submitButton}>Lưu lịch</button>
             </form>
           </div>

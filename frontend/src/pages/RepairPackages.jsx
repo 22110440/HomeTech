@@ -37,6 +37,7 @@ export default function RepairPackages() {
         <div className={styles.grid}>
           {filtered.map((item) => (
             <article key={item.id} className={styles.card}>
+              {item.imageUrl && <img src={item.imageUrl} alt={item.serviceName} className={styles.packageImage} />}
               <h3>{item.serviceName}</h3>
               <p>Loại máy: {item.phoneType}</p>
               <p>Danh mục: {item.serviceCategory}</p>

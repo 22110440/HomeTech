@@ -70,6 +70,7 @@ export default function RepairPackageDetail() {
         <h1>{detail.serviceName}</h1>
         <Link to="/repair-packages">← Quay lại danh sách</Link>
       </header>
+      {detail.imageUrl && <img src={detail.imageUrl} alt={detail.serviceName} className={styles.packageImage} />}
       <p><strong>Loại máy:</strong> {detail.phoneType}</p>
       <p><strong>Danh mục dịch vụ:</strong> {detail.serviceCategory}</p>
       <p><strong>Giá:</strong> {Number(detail.price || 0).toLocaleString('vi-VN')} đ</p>

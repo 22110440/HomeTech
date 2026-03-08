@@ -6,4 +6,8 @@
 .searchForm button { border: 0; border-radius: 8px; background: #ffb703; color: #1f2937; font-weight: 700; padding: 10px 14px; cursor: pointer; }
 .nav { display: flex; gap: 14px; }
 .nav a { color: #fff; text-decoration: none; font-weight: 600; }
+.categoriesBar { border-top: 1px solid rgba(255,255,255,0.2); background: #0a3652; }
+.categoriesInner { max-width: 1200px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 12px; overflow-x: auto; }
+.categoryItem { color: #dbeafe; text-decoration: none; font-weight: 500; white-space: nowrap; padding: 4px 8px; border-radius: 999px; }
+.categoryItem:hover { background: rgba(255,255,255,0.15); color: #fff; }
 @media (max-width: 900px) { .inner { grid-template-columns: 1fr; } .nav { justify-content: space-between; } }

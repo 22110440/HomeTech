@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { userAPI, authAPI } from '../services/api';
 import api from '../services/api';
 import styles from './Home.module.css';
 
 function Home() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [userInfo, setUserInfo] = useState(null);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -29,6 +30,14 @@ function Home() {
   useEffect(() => {
     loadData();
   }, []);
+
+
+  useEffect(() => {
+    const keyword = searchParams.get('keyword') || '';
+    const category = searchParams.get('category');
+    setSearchKeyword(keyword);
+    setSelectedCategoryId(category ? Number(category) : null);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!heroBanners.length) return undefined;

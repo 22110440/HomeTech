@@ -64,6 +64,7 @@ public class RepairServicePackageService {
         entity.setServiceCategory(request.getServiceCategory().trim());
         entity.setServiceName(request.getServiceName().trim());
         entity.setDescription(request.getDescription() == null ? null : request.getDescription().trim());
+        entity.setImageUrl(request.getImageUrl() == null ? null : request.getImageUrl().trim());
         entity.setPrice(request.getPrice());
         entity.setEstimatedDurationMinutes(request.getEstimatedDurationMinutes());
         entity.setActive(request.getActive() == null ? true : request.getActive());

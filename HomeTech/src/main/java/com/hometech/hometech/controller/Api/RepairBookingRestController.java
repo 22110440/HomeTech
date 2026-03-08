@@ -1,6 +1,7 @@
 package com.hometech.hometech.controller.Api;
 
 import com.hometech.hometech.dto.PayOsCreateResponse;
+import com.hometech.hometech.dto.RepairBookingProgressRequest;
 import com.hometech.hometech.dto.RepairBookingRequest;
 import com.hometech.hometech.dto.VnPayCreateResponse;
 import com.hometech.hometech.dto.VnPayReturnResponse;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -114,6 +116,20 @@ public class RepairBookingRestController {
             return buildResponse(true, "Cập nhật lịch sửa chữa thành công", toBookingPayload(booking), null, HttpStatus.OK);
         } catch (RuntimeException e) {
             return buildResponse(false, "Cập nhật lịch sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
+    @PutMapping("/api/admin/repair-bookings/{bookingId}/progress")
+    public ResponseEntity<?> updateProgress(@PathVariable Long bookingId,
+                                            @RequestBody RepairBookingProgressRequest request,
+                                            Authentication authentication) {
+        try {
+            String username = authentication != null ? authentication.getName() : null;
+            RepairBooking updated = repairBookingService.updateProgress(bookingId, request, username);
+            return buildResponse(true, "Cập nhật tiến trình sửa chữa thành công", updated, null, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return buildResponse(false, "Cập nhật tiến trình sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 

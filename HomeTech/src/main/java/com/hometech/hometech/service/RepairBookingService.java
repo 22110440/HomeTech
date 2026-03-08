@@ -1,11 +1,14 @@
 package com.hometech.hometech.service;
 
+import com.hometech.hometech.Repository.AccountRepository;
 import com.hometech.hometech.Repository.CustomerRepository;
 import com.hometech.hometech.Repository.RepairBookingRepository;
 import com.hometech.hometech.Repository.RepairServicePackageRepository;
+import com.hometech.hometech.dto.RepairBookingProgressRequest;
 import com.hometech.hometech.dto.RepairBookingRequest;
 import com.hometech.hometech.enums.PaymentMethod;
 import com.hometech.hometech.enums.RepairBookingStatus;
+import com.hometech.hometech.model.Account;
 import com.hometech.hometech.model.Customer;
 import com.hometech.hometech.model.RepairBooking;
 import com.hometech.hometech.model.RepairServicePackage;
@@ -20,13 +23,16 @@ public class RepairBookingService {
     private final RepairBookingRepository repairBookingRepository;
     private final CustomerRepository customerRepository;
     private final RepairServicePackageRepository repairServicePackageRepository;
+    private final AccountRepository accountRepository;
 
     public RepairBookingService(RepairBookingRepository repairBookingRepository,
                                 CustomerRepository customerRepository,
-                                RepairServicePackageRepository repairServicePackageRepository) {
+                                RepairServicePackageRepository repairServicePackageRepository,
+                                AccountRepository accountRepository) {
         this.repairBookingRepository = repairBookingRepository;
         this.customerRepository = customerRepository;
         this.repairServicePackageRepository = repairServicePackageRepository;
+        this.accountRepository = accountRepository;
     }
 
     public RepairBooking createBooking(RepairBookingRequest request) {
@@ -77,6 +83,39 @@ public class RepairBookingService {
     }
 
     public RepairBooking save(RepairBooking booking) {
+        return repairBookingRepository.save(booking);
+    }
+
+
+    public RepairBooking updateProgress(Long bookingId, RepairBookingProgressRequest request, String actorUsername) {
+        if (request == null || request.getStatus() == null) {
+            throw new RuntimeException("Thiếu trạng thái tiến trình sửa chữa");
+        }
+
+        RepairBooking booking = getBookingById(bookingId);
+        if (actorUsername == null || actorUsername.isBlank()) {
+            throw new RuntimeException("Không xác định được tài khoản cập nhật tiến trình");
+        }
+
+        Account technician = accountRepository.findByUsername(actorUsername)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản thợ"));
+
+        booking.setTechnicianAccount(technician);
+        booking.setTechnicianName(technician.getUsername());
+        booking.setProgressNote(request.getProgressNote() == null ? null : request.getProgressNote().trim());
+
+        if (request.getStatus() == RepairBookingStatus.IN_PROGRESS && booking.getStartedAt() == null) {
+            booking.setStartedAt(java.time.LocalDateTime.now());
+        }
+
+        if (request.getStatus() == RepairBookingStatus.COMPLETED) {
+            booking.setCompletedAt(java.time.LocalDateTime.now());
+            if (booking.getStartedAt() == null) {
+                booking.setStartedAt(java.time.LocalDateTime.now());
+            }
+        }
+
+        booking.setStatus(request.getStatus());
         return repairBookingRepository.save(booking);
     }
 
