@@ -22,10 +22,41 @@ function getSession(timeValue) {
   return 'Tối';
 }
 
+function getCurrentWeekValue() {
+  const now = new Date();
+  const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function getWeekDateRange(weekValue) {
+  if (!weekValue || !weekValue.includes('-W')) return null;
+  const [yearStr, weekStr] = weekValue.split('-W');
+  const year = Number(yearStr);
+  const week = Number(weekStr);
+  if (!year || !week) return null;
+
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const dow = simple.getUTCDay() || 7;
+  const monday = new Date(simple);
+  monday.setUTCDate(simple.getUTCDate() - dow + 1);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+
+  return {
+    start: monday.toISOString().slice(0, 10),
+    end: sunday.toISOString().slice(0, 10)
+  };
+}
+
 export default function RepairSchedules() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekValue());
 
   useEffect(() => {
     const load = async () => {
@@ -49,9 +80,16 @@ export default function RepairSchedules() {
     load();
   }, []);
 
+  const weekRange = useMemo(() => getWeekDateRange(selectedWeek), [selectedWeek]);
+
+  const weekBookings = useMemo(() => {
+    if (!weekRange) return bookings;
+    return bookings.filter((booking) => booking.appointmentDate >= weekRange.start && booking.appointmentDate <= weekRange.end);
+  }, [bookings, weekRange]);
+
   const calendarMap = useMemo(() => {
     const map = {};
-    bookings.forEach((booking) => {
+    weekBookings.forEach((booking) => {
       const date = new Date(booking.appointmentDate);
       if (Number.isNaN(date.getTime())) return;
       const jsDay = date.getDay();
@@ -62,7 +100,7 @@ export default function RepairSchedules() {
       map[key].push(booking);
     });
     return map;
-  }, [bookings]);
+  }, [weekBookings]);
 
   return (
     <div className={styles.page}>
@@ -71,11 +109,17 @@ export default function RepairSchedules() {
         <Link to="/repair-packages">← Đặt lịch mới</Link>
       </header>
 
+      <div className={styles.search} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <label style={{ fontWeight: 700 }}>Tuần:</label>
+        <input type="week" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
+        {weekRange && <span>{weekRange.start} → {weekRange.end}</span>}
+      </div>
+
       {loading ? <p>Đang tải lịch sửa chữa...</p> : null}
       {!loading && message ? <p>{message}</p> : null}
-      {!loading && !message && bookings.length === 0 ? <p>Bạn chưa có lịch sửa chữa nào.</p> : null}
+      {!loading && !message && weekBookings.length === 0 ? <p>Không có lịch sửa chữa trong tuần đã chọn.</p> : null}
 
-      {!loading && bookings.length > 0 && (
+      {!loading && weekBookings.length > 0 && (
         <div className={styles.tableWrap}>
           <table className={styles.tableCalendar}>
             <thead>
@@ -100,6 +144,8 @@ export default function RepairSchedules() {
                             <div>Danh mục: {booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory}</div>
                             <div>Giờ: {booking.appointmentTime}</div>
                             <div>Trạng thái: {booking.status}</div>
+                            <div>KTV: {booking.technicianName || 'Chưa nhận'}</div>
+                            {booking.progressNote && <div>Tiến trình: {booking.progressNote}</div>}
                           </div>
                         ))}
                       </td>

@@ -35,29 +35,79 @@ function getSession(timeValue) {
   return 'Tối';
 }
 
+function getCurrentWeekValue() {
+  const now = new Date();
+  const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function getWeekDateRange(weekValue) {
+  if (!weekValue || !weekValue.includes('-W')) return null;
+  const [yearStr, weekStr] = weekValue.split('-W');
+  const year = Number(yearStr);
+  const week = Number(weekStr);
+  if (!year || !week) return null;
+
+  const simple = new Date(Date.UTC(year, 0, 1 + (week - 1) * 7));
+  const dow = simple.getUTCDay() || 7;
+  const monday = new Date(simple);
+  monday.setUTCDate(simple.getUTCDate() - dow + 1);
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+
+  return {
+    start: monday.toISOString().slice(0, 10),
+    end: sunday.toISOString().slice(0, 10)
+  };
+}
+
 export default function RepairSchedulesManagement() {
   const [bookings, setBookings] = useState([]);
   const [repairPackages, setRepairPackages] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
+  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekValue());
+  const [loading, setLoading] = useState(true);
+
+  const role = (localStorage.getItem('role') || '').toUpperCase();
+  const isTechnician = role === 'THO';
 
   const loadData = async () => {
-    const [bookingsRes, packagesRes] = await Promise.all([
-      adminAPI.getAllRepairBookingsAdmin(),
-      adminAPI.getAllRepairPackagesAdmin()
-    ]);
-    setBookings(bookingsRes?.data || []);
-    setRepairPackages(packagesRes?.data || []);
+    try {
+      setLoading(true);
+      const [bookingsRes, packagesRes] = await Promise.all([
+        adminAPI.getAllRepairBookingsAdmin(),
+        adminAPI.getAllRepairPackagesAdmin()
+      ]);
+      setBookings(bookingsRes?.data || []);
+      setRepairPackages(packagesRes?.data || []);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
+  const weekRange = useMemo(() => getWeekDateRange(selectedWeek), [selectedWeek]);
+
+  const weekBookings = useMemo(() => {
+    if (!weekRange) return bookings;
+    return bookings.filter((booking) => {
+      const date = booking.appointmentDate;
+      return date && date >= weekRange.start && date <= weekRange.end;
+    });
+  }, [bookings, weekRange]);
+
   const calendarMap = useMemo(() => {
     const map = {};
-    bookings.forEach((booking) => {
+    weekBookings.forEach((booking) => {
       const date = new Date(booking.appointmentDate);
       if (Number.isNaN(date.getTime())) return;
       const jsDay = date.getDay();
@@ -68,7 +118,7 @@ export default function RepairSchedulesManagement() {
       map[key].push(booking);
     });
     return map;
-  }, [bookings]);
+  }, [weekBookings]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -126,14 +176,36 @@ export default function RepairSchedulesManagement() {
     await loadData();
   };
 
+  const claimBooking = async (bookingId) => {
+    try {
+      await adminAPI.updateRepairBookingProgressAdmin(bookingId, {
+        status: 'IN_PROGRESS',
+        progressNote: 'Thợ đã nhận sửa chữa'
+      });
+      await loadData();
+    } catch (error) {
+      alert(error?.response?.data?.error || 'Không thể nhận sửa chữa');
+    }
+  };
+
+  if (loading) return <div className={styles.loadingContainer}><p>Đang tải...</p></div>;
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Lịch sửa chữa khách hàng</h1>
-          <p className={styles.subtitle}>Lịch cập nhật tự động khi khách hàng đặt lịch, admin có thể thêm/sửa/xóa.</p>
+          <p className={styles.subtitle}>Mặc định hiển thị tuần hiện tại, có thể lọc theo tuần để theo dõi.</p>
         </div>
-        <button className={styles.createButton} onClick={openCreate}>+ Thêm lịch</button>
+        {!isTechnician && <button className={styles.createButton} onClick={openCreate}>+ Thêm lịch</button>}
+      </div>
+
+      <div className={styles.controls}>
+        <div className={styles.searchBox}>
+          <label style={{ fontWeight: 700 }}>Tuần:</label>
+          <input type="week" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
+          {weekRange && <span>{weekRange.start} → {weekRange.end}</span>}
+        </div>
       </div>
 
       <div className={styles.tableContainer}>
@@ -154,18 +226,23 @@ export default function RepairSchedulesManagement() {
                   return (
                     <td key={key}>
                       {list.map((booking) => (
-                        <div key={booking.id} style={{ background: '#dcefff', borderRadius: 8, padding: 8, marginBottom: 8 }}>
+                        <div key={booking.id} style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 8, padding: 8, marginBottom: 8 }}>
                           <div><strong>{booking.repairPackage?.serviceName}</strong></div>
                           <div>KH: {booking.customerName} - {booking.phone}</div>
                           <div>Máy: {booking.deviceModel}</div>
                           <div>Danh mục: {booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory}</div>
                           <div>Giờ: {booking.appointmentTime}</div>
-                          <div>Trạng thái: {booking.status}</div>
+                          <div>Trạng thái: <strong>{booking.status}</strong></div>
                           <div>KTV: {booking.technicianName || 'Chưa gán'}</div>
                           {booking.progressNote && <div>Tiến trình: {booking.progressNote}</div>}
-                          <div style={{ marginTop: 6, display: 'flex', gap: 8 }}>
-                            <button className={styles.actionButton} onClick={() => openEdit(booking)}>Sửa</button>
-                            <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => remove(booking.id)}>Xóa</button>
+                          <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <button className={styles.actionButton} onClick={() => openEdit(booking)}>Cập nhật</button>
+                            {(booking.status === 'PENDING' || booking.status === 'PAID' || booking.status === 'WAITING_PAYMENT') && (
+                              <button className={styles.actionButton} onClick={() => claimBooking(booking.id)}>Nhận sửa chữa</button>
+                            )}
+                            {!isTechnician && (
+                              <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => remove(booking.id)}>Xóa</button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -181,7 +258,7 @@ export default function RepairSchedulesManagement() {
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}><h2>{editingId ? 'Sửa lịch sửa chữa' : 'Thêm lịch sửa chữa'}</h2></div>
+            <div className={styles.modalHeader}><h2>{editingId ? 'Cập nhật lịch sửa chữa' : 'Thêm lịch sửa chữa'}</h2></div>
             <form className={styles.form} onSubmit={submit}>
               <input type="number" placeholder="Customer ID" value={form.customerId} onChange={(e) => setForm((p) => ({ ...p, customerId: e.target.value }))} required />
               <select value={form.repairPackageId} onChange={(e) => setForm((p) => ({ ...p, repairPackageId: e.target.value }))} required>
