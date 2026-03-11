@@ -9,7 +9,7 @@ export default function RepairPackageDetail() {
   const [detail, setDetail] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [form, setForm] = useState({
-    customerName: '', phone: '', deviceModel: '', appointmentDate: '', appointmentTime: '', note: ''
+    customerName: '', phone: '', deviceModel: '', appointmentDate: '', appointmentTime: '', note: '', paymentMethod: 'COD'
   });
 
   useEffect(() => {
@@ -44,12 +44,16 @@ export default function RepairPackageDetail() {
       appointmentDate: form.appointmentDate,
       appointmentTime: form.appointmentTime,
       note: form.note,
-      paymentMethod: 'COD'
+      paymentMethod: form.paymentMethod
     };
     const createRes = await userAPI.createRepairBooking(payload);
     if (!createRes?.success) return alert(createRes?.error || 'Đặt lịch thất bại');
     const bookingId = createRes.data.id;
-    navigate(`/repair-payment/${bookingId}`);
+    if (form.paymentMethod === 'VNPAY' || form.paymentMethod === 'PAYOS') {
+      navigate(`/repair-payment/${bookingId}?autopay=1&method=${form.paymentMethod}`);
+      return;
+    }
+    navigate('/my-repair-schedules');
   };
 
   if (!detail) return <div className={styles.page}><p>Đang tải chi tiết...</p></div>;
@@ -73,6 +77,14 @@ export default function RepairPackageDetail() {
         <input type="date" value={form.appointmentDate} onChange={(e) => setForm((p) => ({ ...p, appointmentDate: e.target.value }))} required />
         <input type="time" value={form.appointmentTime} onChange={(e) => setForm((p) => ({ ...p, appointmentTime: e.target.value }))} required />
         <textarea placeholder="Ghi chú" value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} rows={4} />
+        <label>
+          Phương thức thanh toán
+          <select value={form.paymentMethod} onChange={(e) => setForm((p) => ({ ...p, paymentMethod: e.target.value }))}>
+            <option value="COD">Tiền mặt</option>
+            <option value="VNPAY">VNPAY</option>
+            <option value="PAYOS">PayOS</option>
+          </select>
+        </label>
         <button className={styles.btn} type="submit">Đặt lịch</button>
       </form>
     </div>

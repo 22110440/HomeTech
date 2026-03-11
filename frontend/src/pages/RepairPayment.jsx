@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api, { userAPI } from '../services/api';
 import styles from './RepairBooking.module.css';
 
@@ -11,11 +11,13 @@ const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', {
 export default function RepairPayment() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [booking, setBooking] = useState(null);
   const [method, setMethod] = useState('COD');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [autoTriggered, setAutoTriggered] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -32,7 +34,8 @@ export default function RepairPayment() {
           return;
         }
         setBooking(item);
-        setMethod(item.paymentMethod || 'COD');
+        const requestedMethod = searchParams.get('method');
+        setMethod(requestedMethod || item.paymentMethod || 'COD');
       } catch (error) {
         setMessage(error?.response?.data?.error || 'Không thể tải thông tin thanh toán.');
       } finally {
@@ -40,9 +43,20 @@ export default function RepairPayment() {
       }
     };
     load();
-  }, [bookingId]);
+  }, [bookingId, searchParams]);
 
   const canPayOnline = useMemo(() => booking && booking.status !== 'PAID', [booking]);
+
+
+  useEffect(() => {
+    const autoPay = searchParams.get('autopay');
+    if (!booking || loading || submitting || autoTriggered) return;
+    if (autoPay !== '1') return;
+    if (method !== 'VNPAY' && method !== 'PAYOS') return;
+    setAutoTriggered(true);
+    handleContinue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoTriggered, booking, loading, method, searchParams]);
 
   const handleContinue = async () => {
     if (!booking) return;
