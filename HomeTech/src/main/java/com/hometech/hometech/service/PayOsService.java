@@ -185,6 +185,62 @@ public class PayOsService {
         }
     }
 
+
+    public PayOsCreateResponse createPaymentLinkForRepair(long orderCode, long amount, String description, String returnUrl, String cancelUrl) {
+        if (orderCode <= 0) {
+            throw new IllegalArgumentException("OrderCode phải là số nguyên dương");
+        }
+        if (amount < 10000) {
+            throw new IllegalArgumentException("Số tiền thanh toán phải >= 10.000 VND");
+        }
+        if (!StringUtils.hasText(returnUrl) || !returnUrl.startsWith("http")) {
+            throw new IllegalArgumentException("returnUrl không hợp lệ: " + returnUrl);
+        }
+        if (!StringUtils.hasText(cancelUrl) || !cancelUrl.startsWith("http")) {
+            throw new IllegalArgumentException("cancelUrl không hợp lệ: " + cancelUrl);
+        }
+
+        int normalizedOrderCode = (int) (orderCode % Integer.MAX_VALUE);
+        if (normalizedOrderCode <= 0) {
+            normalizedOrderCode = (int) (System.currentTimeMillis() % Integer.MAX_VALUE);
+        }
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("orderCode", normalizedOrderCode);
+        payload.put("amount", (int) amount);
+        payload.put("description", description);
+        payload.put("returnUrl", returnUrl);
+        payload.put("cancelUrl", cancelUrl);
+
+        String checksumData = calculateChecksumData(normalizedOrderCode, amount, description, returnUrl, cancelUrl);
+        String signature = HmacUtil.hmacSHA256(properties.getChecksumKey(), checksumData);
+        payload.put("signature", signature);
+
+        HttpHeaders headers = buildHeadersForCreate(signature);
+        String bodyJson = toJson(payload);
+
+        try {
+            String url = properties.getBaseUrl() + "/v2/payment-requests";
+            ResponseEntity<JsonNode> response = restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(bodyJson, headers), JsonNode.class);
+            JsonNode root = response.getBody();
+            String code = root.path("code").asText("");
+            if (!"00".equals(code)) {
+                throw new IllegalStateException("PayOS error code=" + code + " desc=" + root.path("desc").asText(""));
+            }
+            JsonNode data = root.path("data");
+            PayOsCreateResponse result = new PayOsCreateResponse();
+            result.setSuccess(true);
+            result.setOrderCode(String.valueOf(normalizedOrderCode));
+            result.setPaymentLinkId(data.path("paymentLinkId").asText(null));
+            result.setCheckoutUrl(data.path("checkoutUrl").asText(null));
+            result.setQrCode(data.path("qrCode").asText(null));
+            result.setMessage("Tạo liên kết thanh toán thành công");
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("Không thể tạo liên kết thanh toán PayOS", e);
+        }
+    }
+
     public boolean verifyWebhookSignature(PayOsWebhookPayload payload) {
         if (payload == null || payload.getData() == null) {
             return false;
