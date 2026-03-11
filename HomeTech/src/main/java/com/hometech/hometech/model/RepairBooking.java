@@ -47,13 +47,16 @@ public class RepairBooking {
     private PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private RepairBookingStatus status;
 
     @Column(nullable = false)
     private Double totalAmount;
 
+    @Column(length = 255)
     private String paymentTxnRef;
+
+    @Column(length = 2000)
     private String paymentCheckoutUrl;
 
     @JsonIgnore

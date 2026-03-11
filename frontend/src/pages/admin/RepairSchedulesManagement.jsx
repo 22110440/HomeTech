@@ -65,18 +65,6 @@ function getWeekDateRange(weekValue) {
   };
 }
 
-
-function shiftWeek(weekValue, offset) {
-  const range = getWeekDateRange(weekValue);
-  if (!range) return getCurrentWeekValue();
-  const monday = new Date(`${range.start}T00:00:00Z`);
-  monday.setUTCDate(monday.getUTCDate() + (offset * 7));
-  const dayNum = monday.getUTCDay() || 7;
-  monday.setUTCDate(monday.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(monday.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((monday - yearStart) / 86400000) + 1) / 7);
-  return `${monday.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-}
 export default function RepairSchedulesManagement() {
   const [bookings, setBookings] = useState([]);
   const [repairPackages, setRepairPackages] = useState([]);
@@ -226,12 +214,9 @@ export default function RepairSchedulesManagement() {
       </div>
 
       <div className={styles.controls}>
-        <div className={styles.searchBox} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className={styles.searchBox}>
           <label style={{ fontWeight: 700 }}>Tuần:</label>
-          <button type="button" className={styles.actionButton} onClick={() => setSelectedWeek((prev) => shiftWeek(prev, -1))}>← Tuần trước</button>
           <input type="week" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
-          <button type="button" className={styles.actionButton} onClick={() => setSelectedWeek((prev) => shiftWeek(prev, 1))}>Tuần sau →</button>
-          <button type="button" className={styles.actionButton} onClick={() => setSelectedWeek(getCurrentWeekValue())}>Tuần hiện tại</button>
           {weekRange && <span>{weekRange.start} → {weekRange.end}</span>}
         </div>
       </div>
