@@ -35,6 +35,9 @@ public class RepairBookingRestController {
     @Value("${frontend.base-url:http://localhost:5173}")
     private String frontendBaseUrl;
 
+    @Value("${backend.base-url:http://localhost:8080}")
+    private String backendBaseUrl;
+
     public RepairBookingRestController(RepairBookingService repairBookingService,
                                        VnPayService vnPayService,
                                        PayOsService payOsService) {
@@ -167,7 +170,8 @@ public class RepairBookingRestController {
                 return buildResponse(false, "Lịch sửa chữa không dùng VNPAY", null, null, HttpStatus.BAD_REQUEST);
             }
             String orderInfo = "Thanh toan sua chua #" + booking.getId();
-            VnPayCreateResponse response = vnPayService.createPaymentUrl(request, Math.round(booking.getTotalAmount()), orderInfo);
+            String repairReturnUrl = backendBaseUrl + "/payment/repair/vnpay-return";
+            VnPayCreateResponse response = vnPayService.createPaymentUrl(request, Math.round(booking.getTotalAmount()), orderInfo, repairReturnUrl);
             booking.setPaymentTxnRef(response.getTxnRef());
             booking.setPaymentCheckoutUrl(response.getPaymentUrl());
             repairBookingService.save(booking);
@@ -186,8 +190,8 @@ public class RepairBookingRestController {
             }
 
             long orderCode = (booking.getId() * 100000) + (System.currentTimeMillis() % 100000);
-            String returnUrl = frontendBaseUrl.replace("5173", "8080") + "/payment/repair/payos/callback?bookingId=" + booking.getId();
-            String cancelUrl = frontendBaseUrl.replace("5173", "8080") + "/payment/repair/payos/cancel?bookingId=" + booking.getId();
+            String returnUrl = backendBaseUrl + "/payment/repair/payos/callback?bookingId=" + booking.getId();
+            String cancelUrl = backendBaseUrl + "/payment/repair/payos/cancel?bookingId=" + booking.getId();
             PayOsCreateResponse response = payOsService.createPaymentLinkForRepair(orderCode, Math.round(booking.getTotalAmount()), "Repair " + booking.getId(), returnUrl, cancelUrl);
 
             booking.setPaymentTxnRef(response.getOrderCode());

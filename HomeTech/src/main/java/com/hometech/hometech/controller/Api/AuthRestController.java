@@ -401,8 +401,11 @@ public class AuthRestController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
-        // Tìm User từ username để lấy id
+        // Tìm User từ username/email để lấy id
         User user = userRepository.findByAccount_Username(userDetails.getUsername());
+        if (user == null) {
+            user = userRepository.findByAccount_Email(userDetails.getUsername());
+        }
         
         Map<String, Object> userData = new HashMap<>();
         userData.put("username", userDetails.getUsername());
