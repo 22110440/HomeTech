@@ -144,6 +144,45 @@ public class AuthService {
         return "Đăng ký admin thành công! Vui lòng kiểm tra email để xác thực.";
     }
 
+
+    @Transactional
+    public String registerTechnician(String username, String email, String password) throws MessagingException {
+        if (accountRepository.existsByUsername(username)) {
+            throw new RuntimeException("Tên đăng nhập đã tồn tại");
+        }
+        if (accountRepository.existsByEmail(email)) {
+            throw new RuntimeException("Email đã được sử dụng");
+        }
+
+        Technician technician = new Technician();
+        technician.setFullName(username);
+        technician.setPhone(null);
+        technician.setCreatedAt(LocalDateTime.now());
+        technician.setUpdatedAt(LocalDateTime.now());
+
+        Account account = new Account();
+        account.setUsername(username);
+        account.setEmail(email);
+        account.setPassword(passwordEncoder.encode(password));
+        account.setRole(RoleType.THO);
+        account.setEnabled(false);
+        account.setEmailVerified(false);
+        account.setVerificationToken(UUID.randomUUID().toString());
+        account.setVerificationTokenExpiry(LocalDateTime.now().plusMinutes(15));
+        account.setCreatedAt(LocalDateTime.now());
+        account.setUpdatedAt(LocalDateTime.now());
+
+        technician.setAccount(account);
+        account.setUser(technician);
+
+        userRepository.save(technician);
+        accountRepository.save(account);
+
+        emailService.sendVerificationEmail(email, account.getVerificationToken());
+
+        return "Đăng ký thợ thành công! Vui lòng kiểm tra email để xác thực.";
+    }
+
     // === XÁC THỰC EMAIL ===
     @Transactional
     public String verifyEmail(String token) {

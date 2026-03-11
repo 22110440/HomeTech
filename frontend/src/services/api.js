@@ -85,6 +85,15 @@ export const authAPI = {
     return response.data;
   },
 
+  registerTechnician: async (username, email, password) => {
+    const response = await api.post('/auth/register-technician', {
+      username,
+      email,
+      password,
+    });
+    return response.data;
+  },
+
   // Đăng nhập
   login: async (usernameOrEmail, password) => {
     const response = await api.post('/auth/login', {
@@ -508,6 +517,122 @@ export const adminAPI = {
     return response.data;
   },
 
+  // Repair service packages (admin)
+  getAllRepairPackagesAdmin: async (phoneType = null) => {
+    const response = await api.get('/admin/repair-packages', {
+      params: phoneType ? { phoneType } : {}
+    });
+    return response.data;
+  },
+
+  getRepairPackageByIdAdmin: async (id) => {
+    const response = await api.get(`/admin/repair-packages/${id}`);
+    return response.data;
+  },
+
+  createRepairPackageAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-packages', payload);
+    return response.data;
+  },
+
+  updateRepairPackageAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-packages/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairPackageAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-packages/${id}`);
+    return response.data;
+  },
+
+
+  // Repair phone categories (admin)
+  getAllRepairPhoneCategoriesAdmin: async () => {
+    const response = await api.get('/admin/repair-phone-categories');
+    return response.data;
+  },
+
+  createRepairPhoneCategoryAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-phone-categories', payload);
+    return response.data;
+  },
+
+  updateRepairPhoneCategoryAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-phone-categories/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairPhoneCategoryAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-phone-categories/${id}`);
+    return response.data;
+  },
+
+  // Repair service categories (admin)
+  getAllRepairServiceCategoriesAdmin: async () => {
+    const response = await api.get('/admin/repair-service-categories');
+    return response.data;
+  },
+
+  createRepairServiceCategoryAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-service-categories', payload);
+    return response.data;
+  },
+
+  updateRepairServiceCategoryAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-service-categories/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairServiceCategoryAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-service-categories/${id}`);
+    return response.data;
+  },
+  // Repair categories (admin)
+  getAllRepairCategoriesAdmin: async () => {
+    const response = await api.get('/admin/repair-categories');
+    return response.data;
+  },
+
+  createRepairCategoryAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-categories', payload);
+    return response.data;
+  },
+
+  updateRepairCategoryAdmin: async (id, payload) => {
+    const response = await api.put(`/admin/repair-categories/${id}`, payload);
+    return response.data;
+  },
+
+  deleteRepairCategoryAdmin: async (id) => {
+    const response = await api.delete(`/admin/repair-categories/${id}`);
+    return response.data;
+  },
+
+  getAllRepairBookingsAdmin: async () => {
+    const response = await api.get('/admin/repair-bookings');
+    return response.data;
+  },
+
+  createRepairBookingAdmin: async (payload) => {
+    const response = await api.post('/admin/repair-bookings', payload);
+    return response.data;
+  },
+
+  updateRepairBookingAdmin: async (bookingId, payload) => {
+    const response = await api.put(`/admin/repair-bookings/${bookingId}`, payload);
+    return response.data;
+  },
+
+  deleteRepairBookingAdmin: async (bookingId) => {
+    const response = await api.delete(`/admin/repair-bookings/${bookingId}`);
+    return response.data;
+  },
+
+  updateRepairBookingProgressAdmin: async (bookingId, payload) => {
+    const response = await api.put(`/admin/repair-bookings/${bookingId}/progress`, payload);
+    return response.data;
+  },
+
   // Reviews Management
   getAllReviews: async () => {
     const response = await api.get('/reviews/all');
@@ -542,7 +667,6 @@ export const adminAPI = {
     return response.data;
   },
 };
-
 // User API (Public)
 export const userAPI = {
   // Products
@@ -781,6 +905,60 @@ export const userAPI = {
     return response.data;
   },
 
+
+  // Repair packages & bookings
+
+  getRepairPhoneCategories: async () => {
+    const response = await api.get('/repair-phone-categories');
+    return response.data;
+  },
+
+  getRepairServiceCategories: async () => {
+    const response = await api.get('/repair-service-categories');
+    return response.data;
+  },
+
+  getRepairCategories: async () => {
+    const response = await api.get('/repair-categories');
+    return response.data;
+  },
+
+  getRepairPackages: async (phoneType = null) => {
+    const response = await api.get('/repair-packages', {
+      params: phoneType ? { phoneType } : {}
+    });
+    return response.data;
+  },
+
+  getRepairPackageDetail: async (id) => {
+    const response = await api.get(`/repair-packages/${id}`);
+    return response.data;
+  },
+
+  createRepairBooking: async (payload) => {
+    const response = await api.post('/repair-bookings', payload);
+    return response.data;
+  },
+
+  updateRepairPaymentMethod: async (bookingId, paymentMethod) => {
+    const response = await api.put(`/repair-bookings/${bookingId}/payment-method`, { paymentMethod });
+    return response.data;
+  },
+
+  getRepairHistory: async (customerId) => {
+    const response = await api.get(`/repair-bookings/history/${customerId}`);
+    return response.data;
+  },
+
+  createRepairVnPayPayment: async (bookingId) => {
+    const response = await api.post(`/repair-bookings/${bookingId}/payment/vnpay`);
+    return response.data;
+  },
+
+  createRepairPayOsPayment: async (bookingId) => {
+    const response = await api.post(`/repair-bookings/${bookingId}/payment/payos`);
+    return response.data;
+  },
   // Expenses
   getExpenses: async (userId, startDate, endDate, groupBy = 'DAY') => {
     const response = await api.get('/orders/my-expenses', {
