@@ -5,6 +5,8 @@ import com.hometech.hometech.config.VnPayConfig;
 import com.hometech.hometech.dto.VnPayCreateResponse;
 import com.hometech.hometech.dto.VnPayReturnResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +19,16 @@ import java.util.*;
 @Service
 public class VnPayService {
 
+    private static final Logger log = LoggerFactory.getLogger(VnPayService.class);
+
     @Autowired
     private VnPayConfig config;
 
     public VnPayCreateResponse createPaymentUrl(HttpServletRequest request, long amount, String orderInfo) {
+        return createPaymentUrl(request, amount, orderInfo, null);
+    }
+
+    public VnPayCreateResponse createPaymentUrl(HttpServletRequest request, long amount, String orderInfo, String customReturnUrl) {
         String vnp_Version     = "2.1.0";
         String vnp_Command     = "pay";
         String vnp_TxnRef      = Long.toString(System.currentTimeMillis());  // hoặc mã đơn hàng
@@ -29,6 +37,8 @@ public class VnPayService {
         String orderType       = "other";
         String vnp_Locale      = "vn";
         String vnp_CurrCode    = "VND";
+        String paymentBaseUrl = resolvePaymentBaseUrl(request);
+        String returnUrl = (customReturnUrl != null && !customReturnUrl.isBlank()) ? customReturnUrl : config.getReturnUrl();
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", vnp_Version);
@@ -40,7 +50,7 @@ public class VnPayService {
         vnp_Params.put("vnp_OrderInfo", orderInfo);
         vnp_Params.put("vnp_OrderType", orderType);
         vnp_Params.put("vnp_Locale", vnp_Locale);
-        vnp_Params.put("vnp_ReturnUrl", config.getReturnUrl());
+        vnp_Params.put("vnp_ReturnUrl", returnUrl);
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
         vnp_Params.put("vnp_CreateDate", new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
 
@@ -67,8 +77,19 @@ public class VnPayService {
         }
 
         String secureHash = HmacUtil.hmacSHA512(config.getHashSecret(), hashData.toString());
-        String paymentUrl = config.getPaymentUrl() + "?" + query.toString() + "&vnp_SecureHash=" + secureHash;
+        String paymentUrl = paymentBaseUrl + "?" + query.toString() + "&vnp_SecureHash=" + secureHash;
         return new VnPayCreateResponse(paymentUrl, vnp_TxnRef, Collections.unmodifiableMap(vnp_Params));
+    }
+
+    private String resolvePaymentBaseUrl(HttpServletRequest request) {
+        String configured = config.getPaymentUrl();
+        String host = request != null ? request.getServerName() : null;
+        boolean localHost = host != null && ("localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host));
+        if (localHost && configured != null && configured.contains("pay.vnpay.vn")) {
+            log.warn("VNPAY production URL detected on localhost. Falling back to sandbox URL for local testing.");
+            return "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        }
+        return configured;
     }
 
     public VnPayReturnResponse processReturn(HttpServletRequest request) {

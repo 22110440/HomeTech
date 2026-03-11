@@ -98,6 +98,43 @@ public class AuthRestController {
     }
 
 
+    @PostMapping("/register-technician")
+    public ResponseEntity<Map<String, Object>> registerTechnician(@Valid @RequestBody RegisterRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("message", "Bạn phải đăng nhập bằng tài khoản admin để thực hiện thao tác này.");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+
+            boolean isAdmin = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_ADMIN".equals(a.getAuthority()) || "ADMIN".equals(a.getAuthority()));
+
+            if (!isAdmin) {
+                response.put("success", false);
+                response.put("message", "Chỉ admin mới có thể đăng ký tài khoản thợ.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+            }
+
+            String message = authService.registerTechnician(request.getUsername(), request.getEmail(), request.getPassword());
+            response.put("success", true);
+            response.put("message", message);
+            return ResponseEntity.ok(response);
+        } catch (MessagingException e) {
+            response.put("success", false);
+            response.put("message", "Lỗi gửi email xác thực. Vui lòng thử lại.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        } catch (RuntimeException e) {
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+
+
     @GetMapping("/verify-email")
     public void verifyEmail(@RequestParam("token") String token, 
                            HttpServletResponse httpResponse) throws IOException {
@@ -364,8 +401,11 @@ public class AuthRestController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
-        // Tìm User từ username để lấy id
+        // Tìm User từ username/email để lấy id
         User user = userRepository.findByAccount_Username(userDetails.getUsername());
+        if (user == null) {
+            user = userRepository.findByAccount_Email(userDetails.getUsername());
+        }
         
         Map<String, Object> userData = new HashMap<>();
         userData.put("username", userDetails.getUsername());

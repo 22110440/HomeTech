@@ -22,6 +22,7 @@ function UsersManagement({ onOpenChat }) {
     email: '',
     password: '',
     confirmPassword: '',
+    roleType: 'ADMIN',
   });
   const [adminFormError, setAdminFormError] = useState('');
   const [adminFormSuccess, setAdminFormSuccess] = useState('');
@@ -361,7 +362,7 @@ function UsersManagement({ onOpenChat }) {
     setAdminFormSuccess('');
   };
 
-  const handleCreateAdmin = async (e) => {
+  const handleCreateStaffAccount = async (e) => {
     e.preventDefault();
     setAdminFormError('');
     setAdminFormSuccess('');
@@ -383,30 +384,37 @@ function UsersManagement({ onOpenChat }) {
 
     try {
       setAdminFormLoading(true);
-      const response = await authAPI.registerAdmin(
-        adminForm.username,
-        adminForm.email,
-        adminForm.password,
-      );
+      const response = adminForm.roleType === 'THO'
+        ? await authAPI.registerTechnician(
+            adminForm.username,
+            adminForm.email,
+            adminForm.password,
+          )
+        : await authAPI.registerAdmin(
+            adminForm.username,
+            adminForm.email,
+            adminForm.password,
+          );
 
       if (response?.success) {
         setAdminFormSuccess(
           response.message ||
-            'Tạo tài khoản admin thành công! Vui lòng kiểm tra email để xác thực tài khoản.',
+            `Tạo tài khoản ${adminForm.roleType === 'THO' ? 'thợ sửa chữa' : 'admin'} thành công! Vui lòng kiểm tra email để xác thực tài khoản.`,
         );
         setAdminForm({
           username: '',
           email: '',
           password: '',
           confirmPassword: '',
+          roleType: adminForm.roleType,
         });
       } else {
-        setAdminFormError(response?.message || 'Tạo tài khoản admin thất bại. Vui lòng thử lại.');
+        setAdminFormError(response?.message || 'Tạo tài khoản thất bại. Vui lòng thử lại.');
       }
     } catch (error) {
-      console.error('Failed to create admin account:', error);
+      console.error('Failed to create staff account:', error);
       setAdminFormError(
-        error.response?.data?.message || 'Tạo tài khoản admin thất bại. Vui lòng thử lại.',
+        error.response?.data?.message || 'Tạo tài khoản thất bại. Vui lòng thử lại.',
       );
     } finally {
       setAdminFormLoading(false);
@@ -431,17 +439,17 @@ function UsersManagement({ onOpenChat }) {
           className={styles.addAdminButton}
           onClick={() => setShowAdminForm((prev) => !prev)}
         >
-          {showAdminForm ? 'Đóng form tạo Admin' : 'Thêm Admin'}
+          {showAdminForm ? 'Đóng form tạo tài khoản' : 'Thêm Admin/Thợ'}
         </button>
       </div>
 
       {showAdminForm && (
         <div className={styles.adminRegisterSection}>
-          <h2 className={styles.sectionTitle}>Tạo tài khoản Admin mới</h2>
+          <h2 className={styles.sectionTitle}>Tạo tài khoản nhân sự mới</h2>
           <p className={styles.sectionSubtitle}>
-            Chỉ admin hiện tại mới có quyền tạo thêm tài khoản admin.
+            Admin hiện tại có thể tạo tài khoản admin hoặc tài khoản thợ sửa chữa từ cùng một form.
           </p>
-          <form className={styles.adminForm} onSubmit={handleCreateAdmin}>
+          <form className={styles.adminForm} onSubmit={handleCreateStaffAccount}>
             {adminFormError && (
               <div className={styles.alertError}>
                 {adminFormError}
@@ -460,7 +468,7 @@ function UsersManagement({ onOpenChat }) {
                   name="username"
                   value={adminForm.username}
                   onChange={handleAdminFormChange}
-                  placeholder="Tên đăng nhập admin"
+                  placeholder={adminForm.roleType === 'THO' ? 'Tên đăng nhập thợ sửa chữa' : 'Tên đăng nhập admin'}
                   required
                 />
               </div>
@@ -471,11 +479,26 @@ function UsersManagement({ onOpenChat }) {
                   name="email"
                   value={adminForm.email}
                   onChange={handleAdminFormChange}
-                  placeholder="Email admin"
+                  placeholder={adminForm.roleType === 'THO' ? 'Email thợ sửa chữa' : 'Email admin'}
                   required
                 />
               </div>
             </div>
+            <div className={styles.adminFormRow}>
+              <div className={styles.adminFormGroup}>
+                <label>Vai trò</label>
+                <select
+                  name="roleType"
+                  value={adminForm.roleType}
+                  onChange={handleAdminFormChange}
+                >
+                  <option value="ADMIN">Admin</option>
+                  <option value="THO">Thợ sửa chữa</option>
+                </select>
+              </div>
+              <div className={styles.adminFormGroup}></div>
+            </div>
+
             <div className={styles.adminFormRow}>
               <div className={styles.adminFormGroup}>
                 <label>Mật khẩu</label>
@@ -504,7 +527,7 @@ function UsersManagement({ onOpenChat }) {
             </div>
             <div className={styles.adminFormActions}>
               <button type="submit" disabled={adminFormLoading}>
-                {adminFormLoading ? 'Đang tạo...' : 'Tạo tài khoản Admin'}
+                {adminFormLoading ? 'Đang tạo...' : 'Tạo tài khoản nhân sự'}
               </button>
             </div>
           </form>
@@ -717,4 +740,3 @@ function UsersManagement({ onOpenChat }) {
 }
 
 export default UsersManagement;
-

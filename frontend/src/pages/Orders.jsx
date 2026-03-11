@@ -40,6 +40,17 @@ const PAYMENT_METHOD_TEXT = {
   PAYOS: 'Thanh toán PayOS'
 };
 
+const REPAIR_STATUS_META = {
+  PENDING: 'Chờ tiếp nhận',
+  WAITING_PAYMENT: 'Chờ thanh toán',
+  PAID: 'Đã thanh toán',
+  IN_PROGRESS: 'Đang sửa chữa',
+  COMPLETED: 'Hoàn tất sửa chữa',
+  CANCELLED: 'Đã hủy'
+};
+
+const getRepairStatusText = (status) => REPAIR_STATUS_META[status] || status || '-';
+
 const unwrapData = (payload, fallback = null) => {
   if (!payload || typeof payload !== 'object') return fallback;
   if (Object.prototype.hasOwnProperty.call(payload, 'data')) {
@@ -118,6 +129,7 @@ function Orders() {
   const [detailError, setDetailError] = useState('');
   const [isCancelling, setIsCancelling] = useState(false);
   const [listError, setListError] = useState('');
+  const [repairBookings, setRepairBookings] = useState([]);
 
   useEffect(() => {
     loadUserInfo();
@@ -174,14 +186,20 @@ function Orders() {
     setListError('');
     try {
       setLoading(true);
-      const response = status === 'ALL'
-        ? await userAPI.getOrders(userInfo.id)
-        : await userAPI.getOrdersByStatus(userInfo.id, status);
+      const [response, repairResponse] = await Promise.all([
+        status === 'ALL'
+          ? userAPI.getOrders(userInfo.id)
+          : userAPI.getOrdersByStatus(userInfo.id, status),
+        userAPI.getRepairHistory(userInfo.id)
+      ]);
       const orderedList = unwrapData(response, []);
+      const repairList = unwrapData(repairResponse, []);
       setOrders(sortOrdersDesc(orderedList));
+      setRepairBookings(sortOrdersDesc(Array.isArray(repairList) ? repairList : []));
     } catch (error) {
       console.error('Error loading orders:', error);
       setOrders([]);
+      setRepairBookings([]);
       setListError('Không thể tải danh sách đơn hàng. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
@@ -404,6 +422,65 @@ function Orders() {
           })}
           </div>
         )}
+        <div className={styles.titleRow} style={{ marginTop: 24 }}>
+          <h2 className={styles.title} style={{ fontSize: '1.35rem' }}>Lịch sử đặt sửa chữa</h2>
+          <Link to="/repair-packages" className={styles.shopButton}>
+            Đặt lịch sửa chữa
+          </Link>
+        </div>
+
+        {repairBookings.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p>Bạn chưa có lịch sửa chữa nào.</p>
+          </div>
+        ) : (
+          <div className={styles.ordersList}>
+            {repairBookings.map((booking) => (
+              <div key={`repair-${booking.id}`} className={styles.orderCard}>
+                <div className={styles.orderHeader}>
+                  <div>
+                    <div className={styles.orderId}>Đơn sửa chữa #{booking.id}</div>
+                    <div className={styles.orderDate}>{formatDate(booking.createdAt)}</div>
+                  </div>
+                  <div className={styles.orderStatus}>
+                    {getRepairStatusText(booking.status)}
+                  </div>
+                </div>
+
+                <div className={styles.orderItems}>
+                  <div className={styles.orderItem}>
+                    <div className={styles.itemInfo}>
+                      <div className={styles.itemName}>{booking.repairPackage?.serviceName || 'Gói sửa chữa'}</div>
+                      <div className={styles.itemDetails}>Thiết bị: {booking.deviceModel || '-'} | Lịch hẹn: {booking.appointmentDate || '-'} {booking.appointmentTime || ''}</div>
+                      <div className={styles.itemDetails}>Danh mục: {booking.repairPackage?.phoneType || '-'} / {booking.repairPackage?.serviceCategory || '-'}</div>
+                      <div className={styles.itemDetails}>Kỹ thuật viên: {booking.technicianName || 'Chưa nhận'}</div>
+                      {booking.progressNote && <div className={styles.itemDetails}>Tiến trình: {booking.progressNote}</div>}
+                    </div>
+                    <div className={styles.itemTotal}>{formatPrice(booking.totalAmount)}</div>
+                  </div>
+                </div>
+
+                <div className={styles.orderFooter}>
+                  <div className={styles.orderMeta}>
+                    <span>Thanh toán:</span>
+                    <strong>{PAYMENT_METHOD_TEXT[booking.paymentMethod] || booking.paymentMethod || 'Không xác định'}</strong>
+                  </div>
+                  <div className={styles.orderActions}>
+                    {(booking.paymentMethod === 'VNPAY' || booking.paymentMethod === 'PAYOS') && booking.status !== 'PAID' && (
+                      <Link to={`/repair-payment/${booking.id}`} className={styles.detailButton}>
+                        Thanh toán ngay
+                      </Link>
+                    )}
+                    <Link to="/my-repair-schedules" className={styles.detailButton}>
+                      Xem lịch sửa chữa
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
       </div>
 
       {isDetailOpen && (
