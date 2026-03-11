@@ -17,7 +17,7 @@
   width: 50px;
   height: 50px;
   border: 4px solid #f3f4f6;
-  border-top-color: #667eea;
+  border-top-color: #dc2626;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -47,7 +47,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: white;
   border: none;
   border-radius: 0.75rem;
@@ -104,7 +104,7 @@
 }
 
 .activeStatusFilterButton {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: #ffffff;
   border-color: transparent;
   box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
@@ -139,7 +139,7 @@
 }
 
 .searchBox:focus-within {
-  border-color: #667eea;
+  border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -175,7 +175,7 @@
 .statValue {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #667eea;
+  color: #dc2626;
 }
 
 .tableContainer {
@@ -191,7 +191,7 @@
 }
 
 .table thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   color: white;
 }
 
@@ -249,7 +249,7 @@
 
 .actionButton:hover {
   transform: scale(1.1);
-  background: #667eea;
+  background: #dc2626;
   color: white;
 }
 
@@ -403,7 +403,7 @@
 .formGroup select:focus,
 .formGroup textarea:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -468,7 +468,7 @@
 
 .displayOrderInput:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #dc2626;
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
@@ -527,7 +527,7 @@
 
 .submitButton {
   padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
   border: none;
   border-radius: 0.5rem;
   font-weight: 600;
@@ -599,7 +599,7 @@
 .variantNameInput:focus,
 .variantStockInput:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
@@ -692,7 +692,7 @@
 
 .attributeRow input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: #dc2626;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
