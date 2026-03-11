@@ -118,6 +118,7 @@ public class RepairBookingService {
         }
 
         Account technician = accountRepository.findByUsername(actorUsername)
+                .or(() -> accountRepository.findByEmail(actorUsername))
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy tài khoản thợ"));
 
         booking.setTechnicianAccount(technician);
