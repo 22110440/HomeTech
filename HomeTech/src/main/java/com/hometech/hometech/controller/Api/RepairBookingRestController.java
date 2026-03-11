@@ -1,6 +1,7 @@
 package com.hometech.hometech.controller.Api;
 
 import com.hometech.hometech.dto.PayOsCreateResponse;
+import com.hometech.hometech.dto.RepairBookingPaymentMethodRequest;
 import com.hometech.hometech.dto.RepairBookingProgressRequest;
 import com.hometech.hometech.dto.RepairBookingRequest;
 import com.hometech.hometech.dto.VnPayCreateResponse;
@@ -66,6 +67,10 @@ public class RepairBookingRestController {
         payload.put("totalAmount", booking.getTotalAmount());
         payload.put("createdAt", booking.getCreatedAt());
         payload.put("updatedAt", booking.getUpdatedAt());
+        payload.put("technicianName", booking.getTechnicianName());
+        payload.put("progressNote", booking.getProgressNote());
+        payload.put("startedAt", booking.getStartedAt());
+        payload.put("completedAt", booking.getCompletedAt());
         payload.put("repairPackage", Map.of(
                 "id", booking.getRepairServicePackage().getId(),
                 "serviceName", booking.getRepairServicePackage().getServiceName(),
@@ -83,6 +88,17 @@ public class RepairBookingRestController {
             return buildResponse(true, "Đặt lịch sửa chữa thành công", toBookingPayload(booking), null, HttpStatus.OK);
         } catch (RuntimeException e) {
             return buildResponse(false, "Đặt lịch sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PutMapping("/api/repair-bookings/{bookingId}/payment-method")
+    public ResponseEntity<Map<String, Object>> updatePaymentMethod(@PathVariable Long bookingId,
+                                                                    @RequestBody RepairBookingPaymentMethodRequest request) {
+        try {
+            RepairBooking booking = repairBookingService.updatePaymentMethod(bookingId, request.getPaymentMethod());
+            return buildResponse(true, "Cập nhật phương thức thanh toán thành công", toBookingPayload(booking), null, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return buildResponse(false, "Cập nhật phương thức thanh toán thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -127,7 +143,7 @@ public class RepairBookingRestController {
         try {
             String username = authentication != null ? authentication.getName() : null;
             RepairBooking updated = repairBookingService.updateProgress(bookingId, request, username);
-            return buildResponse(true, "Cập nhật tiến trình sửa chữa thành công", updated, null, HttpStatus.OK);
+            return buildResponse(true, "Cập nhật tiến trình sửa chữa thành công", toBookingPayload(updated), null, HttpStatus.OK);
         } catch (RuntimeException e) {
             return buildResponse(false, "Cập nhật tiến trình sửa chữa thất bại", null, e.getMessage(), HttpStatus.BAD_REQUEST);
         }

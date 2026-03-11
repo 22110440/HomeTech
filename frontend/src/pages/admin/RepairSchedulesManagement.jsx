@@ -176,6 +176,19 @@ export default function RepairSchedulesManagement() {
     await loadData();
   };
 
+
+  const confirmCashReceived = async (bookingId) => {
+    try {
+      await adminAPI.updateRepairBookingProgressAdmin(bookingId, {
+        status: 'PAID',
+        progressNote: 'Đã nhận tiền mặt từ khách hàng'
+      });
+      await loadData();
+    } catch (error) {
+      alert(error?.response?.data?.error || 'Không thể xác nhận đã nhận tiền mặt');
+    }
+  };
+
   const claimBooking = async (bookingId) => {
     try {
       await adminAPI.updateRepairBookingProgressAdmin(bookingId, {
@@ -239,6 +252,9 @@ export default function RepairSchedulesManagement() {
                             <button className={styles.actionButton} onClick={() => openEdit(booking)}>Cập nhật</button>
                             {(booking.status === 'PENDING' || booking.status === 'PAID' || booking.status === 'WAITING_PAYMENT') && (
                               <button className={styles.actionButton} onClick={() => claimBooking(booking.id)}>Nhận sửa chữa</button>
+                            )}
+                            {booking.paymentMethod === 'COD' && booking.status === 'WAITING_PAYMENT' && (
+                              <button className={styles.actionButton} onClick={() => confirmCashReceived(booking.id)}>Xác nhận đã nhận tiền mặt</button>
                             )}
                             {!isTechnician && (
                               <button className={`${styles.actionButton} ${styles.deleteButton}`} onClick={() => remove(booking.id)}>Xóa</button>

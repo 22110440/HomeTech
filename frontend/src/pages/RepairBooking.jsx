@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api, { userAPI } from '../services/api';
 import styles from './RepairBooking.module.css';
 
@@ -10,8 +10,7 @@ const INITIAL_FORM = {
   appointmentDate: '',
   appointmentTime: '',
   servicePackage: '',
-  note: '',
-  paymentMethod: 'COD'
+  note: ''
 };
 
 const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', {
@@ -20,6 +19,7 @@ const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', {
 }).format(Number(value || 0));
 
 function RepairBooking() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState(INITIAL_FORM);
   const [packages, setPackages] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -83,22 +83,6 @@ function RepairBooking() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const createPayment = async (bookingId, paymentMethod) => {
-    if (paymentMethod === 'VNPAY') {
-      const response = await userAPI.createRepairVnPayPayment(bookingId);
-      if (response?.success && response.paymentUrl) {
-        window.location.href = response.paymentUrl;
-      }
-    }
-
-    if (paymentMethod === 'PAYOS') {
-      const response = await userAPI.createRepairPayOsPayment(bookingId);
-      if (response?.success && response.checkoutUrl) {
-        window.location.href = response.checkoutUrl;
-      }
-    }
-  };
-
   const reloadHistory = async (customerId) => {
     const historyRes = await userAPI.getRepairHistory(customerId);
     setBookings(historyRes?.data || []);
@@ -121,7 +105,7 @@ function RepairBooking() {
         appointmentDate: formData.appointmentDate,
         appointmentTime: formData.appointmentTime,
         note: formData.note,
-        paymentMethod: formData.paymentMethod
+        paymentMethod: 'COD'
       };
 
       const response = await userAPI.createRepairBooking(payload);
@@ -134,9 +118,7 @@ function RepairBooking() {
       setFormData((prev) => ({ ...INITIAL_FORM, customerName: prev.customerName, phone: prev.phone, servicePackage: prev.servicePackage }));
       await reloadHistory(userInfo.id);
 
-      if (payload.paymentMethod === 'VNPAY' || payload.paymentMethod === 'PAYOS') {
-        await createPayment(created.id, payload.paymentMethod);
-      }
+      navigate(`/repair-payment/${created.id}`);
     } catch (error) {
       console.error(error);
       setMessage(error?.response?.data?.error || error.message || 'Đặt lịch thất bại');
@@ -150,7 +132,7 @@ function RepairBooking() {
       <header className={styles.header}>
         <div>
           <h1>Đặt lịch sửa chữa điện thoại</h1>
-          <p>Khách hàng có thể xem gói, đặt lịch và thanh toán online ngay sau khi tạo lịch.</p>
+          <p>Khách hàng sẽ chuyển sang trang thanh toán sau khi đặt lịch để chọn VNPAY/PayOS/COD.</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <Link to="/my-repair-schedules" className={styles.backLink}>Lịch của tôi</Link>
@@ -205,14 +187,6 @@ function RepairBooking() {
               {packages.map((pkg) => (
                 <option key={pkg.id} value={pkg.id}>{pkg.serviceName} ({pkg.phoneType} / {pkg.serviceCategory}) - {formatCurrency(pkg.price)}</option>
               ))}
-            </select>
-          </label>
-          <label>
-            Thanh toán
-            <select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange}>
-              <option value="COD">Thanh toán tại cửa hàng</option>
-              <option value="VNPAY">VNPAY</option>
-              <option value="PAYOS">PayOS</option>
             </select>
           </label>
           <label className={styles.fullWidth}>

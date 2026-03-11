@@ -82,6 +82,26 @@ public class RepairBookingService {
         return repairBookingRepository.save(booking);
     }
 
+
+    public RepairBooking updatePaymentMethod(Long bookingId, PaymentMethod paymentMethod) {
+        if (paymentMethod == null) {
+            throw new RuntimeException("Thiếu phương thức thanh toán");
+        }
+
+        RepairBooking booking = getBookingById(bookingId);
+        booking.setPaymentMethod(paymentMethod);
+        booking.setPaymentTxnRef(null);
+        booking.setPaymentCheckoutUrl(null);
+
+        if (paymentMethod == PaymentMethod.COD) {
+            booking.setStatus(RepairBookingStatus.PENDING);
+        } else if (booking.getStatus() != RepairBookingStatus.PAID) {
+            booking.setStatus(RepairBookingStatus.WAITING_PAYMENT);
+        }
+
+        return repairBookingRepository.save(booking);
+    }
+
     public RepairBooking save(RepairBooking booking) {
         return repairBookingRepository.save(booking);
     }
@@ -112,6 +132,13 @@ public class RepairBookingService {
             booking.setCompletedAt(java.time.LocalDateTime.now());
             if (booking.getStartedAt() == null) {
                 booking.setStartedAt(java.time.LocalDateTime.now());
+            }
+            if (booking.getPaymentMethod() == PaymentMethod.COD && booking.getStatus() != RepairBookingStatus.PAID) {
+                booking.setStatus(RepairBookingStatus.WAITING_PAYMENT);
+                if (booking.getProgressNote() == null || booking.getProgressNote().isBlank()) {
+                    booking.setProgressNote("Đã sửa xong - chờ xác nhận đã nhận tiền mặt");
+                }
+                return repairBookingRepository.save(booking);
             }
         }
 

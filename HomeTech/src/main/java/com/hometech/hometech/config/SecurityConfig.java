@@ -206,6 +206,8 @@ public class SecurityConfig {
                                 "/oauth2/**",
                                 "/payment/**",
                                 "/admin/login", "/admin/register",
+                                "/repair-packages/**", "/repair-booking", "/my-repair-schedules", "/repair-payment", "/trade-in",
+                                "/payment/vnpay/result", "/payment/payos/result",
                                 "/css/**", "/js/**", "/images/**",
                                 "/ws/**",
                                 "/test-notification", "/websocket-test"

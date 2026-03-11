@@ -9,7 +9,7 @@ export default function RepairPackageDetail() {
   const [detail, setDetail] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [form, setForm] = useState({
-    customerName: '', phone: '', deviceModel: '', appointmentDate: '', appointmentTime: '', note: '', paymentMethod: 'COD'
+    customerName: '', phone: '', deviceModel: '', appointmentDate: '', appointmentTime: '', note: ''
   });
 
   useEffect(() => {
@@ -44,22 +44,12 @@ export default function RepairPackageDetail() {
       appointmentDate: form.appointmentDate,
       appointmentTime: form.appointmentTime,
       note: form.note,
-      paymentMethod: form.paymentMethod
+      paymentMethod: 'COD'
     };
     const createRes = await userAPI.createRepairBooking(payload);
     if (!createRes?.success) return alert(createRes?.error || 'Đặt lịch thất bại');
     const bookingId = createRes.data.id;
-    if (form.paymentMethod === 'VNPAY') {
-      const pay = await userAPI.createRepairVnPayPayment(bookingId);
-      if (pay?.success && pay.paymentUrl) window.location.href = pay.paymentUrl;
-      return;
-    }
-    if (form.paymentMethod === 'PAYOS') {
-      const pay = await userAPI.createRepairPayOsPayment(bookingId);
-      if (pay?.success && pay.checkoutUrl) window.location.href = pay.checkoutUrl;
-      return;
-    }
-    navigate('/my-repair-schedules');
+    navigate(`/repair-payment/${bookingId}`);
   };
 
   if (!detail) return <div className={styles.page}><p>Đang tải chi tiết...</p></div>;
@@ -82,11 +72,6 @@ export default function RepairPackageDetail() {
         <input placeholder="Dòng máy" value={form.deviceModel} onChange={(e) => setForm((p) => ({ ...p, deviceModel: e.target.value }))} required />
         <input type="date" value={form.appointmentDate} onChange={(e) => setForm((p) => ({ ...p, appointmentDate: e.target.value }))} required />
         <input type="time" value={form.appointmentTime} onChange={(e) => setForm((p) => ({ ...p, appointmentTime: e.target.value }))} required />
-        <select value={form.paymentMethod} onChange={(e) => setForm((p) => ({ ...p, paymentMethod: e.target.value }))}>
-          <option value="COD">Thanh toán tại cửa hàng</option>
-          <option value="VNPAY">VNPAY</option>
-          <option value="PAYOS">PayOS</option>
-        </select>
         <textarea placeholder="Ghi chú" value={form.note} onChange={(e) => setForm((p) => ({ ...p, note: e.target.value }))} rows={4} />
         <button className={styles.btn} type="submit">Đặt lịch</button>
       </form>

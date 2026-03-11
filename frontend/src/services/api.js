@@ -940,6 +940,11 @@ export const userAPI = {
     return response.data;
   },
 
+  updateRepairPaymentMethod: async (bookingId, paymentMethod) => {
+    const response = await api.put(`/repair-bookings/${bookingId}/payment-method`, { paymentMethod });
+    return response.data;
+  },
+
   getRepairHistory: async (customerId) => {
     const response = await api.get(`/repair-bookings/history/${customerId}`);
     return response.data;

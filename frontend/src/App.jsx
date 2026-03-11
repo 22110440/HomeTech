@@ -23,6 +23,7 @@ import RepairBooking from './pages/RepairBooking';
 import RepairPackages from './pages/RepairPackages';
 import RepairPackageDetail from './pages/RepairPackageDetail';
 import RepairSchedules from './pages/RepairSchedules';
+import RepairPayment from './pages/RepairPayment';
 import TradeIn from './pages/TradeIn';
 import './App.css';
 
@@ -67,6 +68,7 @@ function AppRoutes() {
         <Route path="/repair-packages" element={<RepairPackages />} />
         <Route path="/repair-packages/:id" element={<RepairPackageDetail />} />
         <Route path="/my-repair-schedules" element={<RepairSchedules />} />
+        <Route path="/repair-payment/:bookingId" element={<RepairPayment />} />
         <Route path="/trade-in" element={<TradeIn />} />
 
         {/* Default redirect */}
