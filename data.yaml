@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 5
+names: ['Cracked', 'Oil-1', 'Oil-2', 'Scratch', 'Stain']
+
+roboflow:
+  workspace: xlas-dr5ri
+  project: xlas-dr5ri
+  version: dataset
+  license: Private
+  url: https://app.roboflow.com/xlas-dr5ri/xlas-dr5ri/dataset

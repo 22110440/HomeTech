@@ -1,7 +1,6 @@
 package com.hometech.hometech.service;
 
-import com.hometech.hometech.Repository.CategoryRepository;
-import com.hometech.hometech.Repository.ProductRepository;
+import com.hometech.hometech.Repository.*;
 import com.hometech.hometech.model.Category;
 import com.hometech.hometech.model.Product;
 import org.junit.jupiter.api.BeforeEach;
