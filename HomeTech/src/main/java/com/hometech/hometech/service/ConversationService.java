@@ -106,7 +106,7 @@ public class ConversationService {
         return conversationRepository.findAll();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public long getUnreadCountForCustomer(Customer customer) {
         Conversation c = getOrCreateConversation(customer);
         return chatMessageRepository.countByConversationAndSenderTypeAndReadIsFalse(

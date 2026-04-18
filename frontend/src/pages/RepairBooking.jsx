@@ -10,12 +10,12 @@ const INITIAL_FORM = {
   appointmentDate: '',
   appointmentTime: '',
   servicePackage: '',
-  note: ''
+  note: '',
 };
 
 const formatCurrency = (value) => new Intl.NumberFormat('vi-VN', {
   style: 'currency',
-  currency: 'VND'
+  currency: 'VND',
 }).format(Number(value || 0));
 
 function RepairBooking() {
@@ -49,7 +49,7 @@ function RepairBooking() {
 
         const [packagesRes, historyRes] = await Promise.all([
           userAPI.getRepairPackages(),
-          userAPI.getRepairHistory(currentUser.id)
+          userAPI.getRepairHistory(currentUser.id),
         ]);
 
         const packageData = packagesRes?.data || [];
@@ -58,7 +58,7 @@ function RepairBooking() {
           ...prev,
           customerName: currentUser?.fullName || currentUser?.username || '',
           phone: currentUser?.phone || '',
-          servicePackage: packageData[0]?.id ? String(packageData[0].id) : ''
+          servicePackage: packageData[0]?.id ? String(packageData[0].id) : '',
         }));
 
         setBookings(historyRes?.data || []);
@@ -105,7 +105,7 @@ function RepairBooking() {
         appointmentDate: formData.appointmentDate,
         appointmentTime: formData.appointmentTime,
         note: formData.note,
-        paymentMethod: 'COD'
+        paymentMethod: 'COD',
       };
 
       const response = await userAPI.createRepairBooking(payload);
@@ -115,9 +115,14 @@ function RepairBooking() {
 
       const created = response.data;
       setMessage('Đặt lịch thành công.');
-      setFormData((prev) => ({ ...INITIAL_FORM, customerName: prev.customerName, phone: prev.phone, servicePackage: prev.servicePackage }));
-      await reloadHistory(userInfo.id);
+      setFormData((prev) => ({
+        ...INITIAL_FORM,
+        customerName: prev.customerName,
+        phone: prev.phone,
+        servicePackage: prev.servicePackage,
+      }));
 
+      await reloadHistory(userInfo.id);
       navigate(`/repair-payment/${created.id}`);
     } catch (error) {
       console.error(error);
@@ -132,7 +137,7 @@ function RepairBooking() {
       <header className={styles.header}>
         <div>
           <h1>Đặt lịch sửa chữa điện thoại</h1>
-          <p>Khách hàng sẽ chuyển sang trang thanh toán sau khi đặt lịch để chọn VNPAY/PayOS/COD.</p>
+          <p>Khách hàng sẽ chuyển sang trang thanh toán sau khi đặt lịch để chọn VNPAY, PayOS hoặc COD.</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
           <Link to="/my-repair-schedules" className={styles.backLink}>Lịch của tôi</Link>
@@ -185,21 +190,25 @@ function RepairBooking() {
             <select name="servicePackage" value={formData.servicePackage} onChange={handleChange} required>
               <option value="">-- Chọn gói --</option>
               {packages.map((pkg) => (
-                <option key={pkg.id} value={pkg.id}>{pkg.serviceName} ({pkg.phoneType} / {pkg.serviceCategory}) - {formatCurrency(pkg.price)}</option>
+                <option key={pkg.id} value={pkg.id}>
+                  {pkg.serviceName} ({pkg.phoneType} / {pkg.serviceCategory}) - {formatCurrency(pkg.price)}
+                </option>
               ))}
             </select>
           </label>
           <label className={styles.fullWidth}>
-            Mô tả lỗi / Ghi chú
+            Mô tả lỗi hoặc ghi chú
             <textarea name="note" value={formData.note} onChange={handleChange} rows={4} />
           </label>
           <button type="submit" className={styles.submitButton} disabled={submitting || loading || !packages.length}>
             {submitting ? 'Đang xử lý...' : 'Đặt lịch ngay'}
           </button>
         </form>
+
         {selectedPackage && (
           <p className={styles.success}>Tổng tạm tính: {formatCurrency(selectedPackage.price)}</p>
         )}
+
         {message && <p className={styles.empty}>{message}</p>}
       </section>
 
@@ -215,7 +224,9 @@ function RepairBooking() {
               <article key={booking.id} className={styles.historyItem}>
                 <div>
                   <h3>{booking.customerName} - {booking.deviceModel}</h3>
-                  <p>{booking.repairPackage?.serviceName} ({booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory})</p>
+                  <p>
+                    {booking.repairPackage?.serviceName} ({booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory})
+                  </p>
                   <p>Thanh toán: {booking.paymentMethod}</p>
                 </div>
                 <div className={styles.historyMeta}>

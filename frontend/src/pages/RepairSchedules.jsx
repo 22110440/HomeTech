@@ -11,8 +11,9 @@ const dayLabel = {
   THURSDAY: 'Thứ 5',
   FRIDAY: 'Thứ 6',
   SATURDAY: 'Thứ 7',
-  SUNDAY: 'Chủ nhật'
+  SUNDAY: 'Chủ nhật',
 };
+
 const sessions = ['Sáng', 'Chiều', 'Tối'];
 
 function getSession(timeValue) {
@@ -48,8 +49,39 @@ function getWeekDateRange(weekValue) {
 
   return {
     start: monday.toISOString().slice(0, 10),
-    end: sunday.toISOString().slice(0, 10)
+    end: sunday.toISOString().slice(0, 10),
   };
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+}
+
+function normalizeLegacyText(value) {
+  if (!value) return value;
+  const normalized = String(value).trim();
+  switch (normalized) {
+    case 'Th? ?? nh?n s?a ch?a':
+      return 'Thợ đã nhận sửa chữa';
+    case 'Th? ?? nh?n m?y ?? ki?m tra v? b?o gi? c? th?':
+      return 'Thợ đã nhận máy để kiểm tra và báo giá cụ thể';
+    case '?? nh?n ti?n m?t t? kh?ch h?ng':
+      return 'Đã nhận tiền mặt từ khách hàng';
+    case '?a s?a xong - ch? x?c nh?n ?? nh?n ti?n m?t':
+      return 'Đã sửa xong - chờ xác nhận đã nhận tiền mặt';
+    default:
+      return value;
+  }
+}
+
+function formatBookingTitle(booking) {
+  return booking.bookingType === 'TRADE_IN'
+    ? 'Lịch thu cũ đổi mới'
+    : booking.repairPackage?.serviceName || 'Lịch sửa chữa';
 }
 
 export default function RepairSchedules() {
@@ -64,7 +96,7 @@ export default function RepairSchedules() {
         setLoading(true);
         const userRes = await api.get('/auth/user-info');
         if (!userRes?.data?.success) {
-          setMessage('Vui lòng đăng nhập để xem lịch sửa chữa.');
+          setMessage('Vui lòng đăng nhập để xem lịch hẹn.');
           return;
         }
         const userId = userRes.data.data.id;
@@ -72,7 +104,7 @@ export default function RepairSchedules() {
         setBookings(historyRes?.data || []);
       } catch (error) {
         console.error(error);
-        setMessage('Không thể tải lịch sửa chữa.');
+        setMessage('Không thể tải lịch hẹn.');
       } finally {
         setLoading(false);
       }
@@ -105,19 +137,19 @@ export default function RepairSchedules() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1>Lịch sửa chữa của tôi</h1>
-        <Link to="/repair-packages">← Đặt lịch mới</Link>
+        <h1>Lịch hẹn của tôi</h1>
+        <Link to="/repair-packages">+ Đặt lịch mới</Link>
       </header>
 
       <div className={styles.search} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <label style={{ fontWeight: 700 }}>Tuần:</label>
         <input type="week" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
-        {weekRange && <span>{weekRange.start} → {weekRange.end}</span>}
+        {weekRange && <span>{weekRange.start} - {weekRange.end}</span>}
       </div>
 
-      {loading ? <p>Đang tải lịch sửa chữa...</p> : null}
+      {loading ? <p>Đang tải lịch hẹn...</p> : null}
       {!loading && message ? <p>{message}</p> : null}
-      {!loading && !message && weekBookings.length === 0 ? <p>Không có lịch sửa chữa trong tuần đã chọn.</p> : null}
+      {!loading && !message && weekBookings.length === 0 ? <p>Không có lịch hẹn trong tuần đã chọn.</p> : null}
 
       {!loading && weekBookings.length > 0 && (
         <div className={styles.tableWrap}>
@@ -139,13 +171,20 @@ export default function RepairSchedules() {
                       <td key={key}>
                         {list.map((booking) => (
                           <div key={booking.id} className={styles.scheduleCard}>
-                            <div><strong>{booking.repairPackage?.serviceName}</strong></div>
+                            <div><strong>{formatBookingTitle(booking)}</strong></div>
                             <div>Máy: {booking.deviceModel}</div>
-                            <div>Danh mục: {booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory}</div>
+                            {booking.bookingType === 'TRADE_IN' ? (
+                              <>
+                                <div>Giá ước lượng: {formatCurrency(booking.estimatedTradeInAmount)}</div>
+                                <div>Tình trạng: {booking.tradeInConditionName || '-'}</div>
+                              </>
+                            ) : (
+                              <div>Danh mục: {booking.repairPackage?.phoneType} / {booking.repairPackage?.serviceCategory}</div>
+                            )}
                             <div>Giờ: {booking.appointmentTime}</div>
                             <div>Trạng thái: {booking.status}</div>
                             <div>KTV: {booking.technicianName || 'Chưa nhận'}</div>
-                            {booking.progressNote && <div>Tiến trình: {booking.progressNote}</div>}
+                            {booking.progressNote && <div>Tiến trình: {normalizeLegacyText(booking.progressNote)}</div>}
                           </div>
                         ))}
                       </td>

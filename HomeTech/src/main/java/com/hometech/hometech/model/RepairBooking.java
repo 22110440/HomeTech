@@ -3,6 +3,7 @@ package com.hometech.hometech.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hometech.hometech.enums.PaymentMethod;
 import com.hometech.hometech.enums.RepairBookingStatus;
+import com.hometech.hometech.enums.RepairBookingType;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -21,8 +22,12 @@ public class RepairBooking {
     private Customer customer;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "repair_package_id", nullable = false)
+    @JoinColumn(name = "repair_package_id")
     private RepairServicePackage repairServicePackage;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private RepairBookingType bookingType;
 
     @Column(nullable = false, length = 150)
     private String customerName;
@@ -52,6 +57,46 @@ public class RepairBooking {
 
     @Column(nullable = false)
     private Double totalAmount;
+
+    private Double estimatedTradeInAmount;
+
+    private Double finalTradeInAmount;
+
+    private Double tradeInHealthScore;
+
+    private Double tradeInOfferRangeMin;
+
+    private Double tradeInOfferRangeMax;
+
+    @Column(length = 150)
+    private String tradeInConditionName;
+
+    @Column(length = 2000)
+    private String tradeInConditionDescription;
+
+    private Integer tradeInBatteryHealth;
+
+    @Column(length = 2000)
+    private String tradeInFunctionalStatus;
+
+    @Column(length = 2000)
+    private String tradeInVisualStatus;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String tradeInInspectionImagesJson;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String tradeInAiImageResultsJson;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String tradeInVideoAnalysisJson;
+
+    @Lob
+    @Column(columnDefinition = "LONGTEXT")
+    private String tradeInVideoDataUrl;
 
     @Column(length = 255)
     private String paymentTxnRef;
@@ -98,6 +143,8 @@ public class RepairBooking {
     public void setCustomer(Customer customer) { this.customer = customer; }
     public RepairServicePackage getRepairServicePackage() { return repairServicePackage; }
     public void setRepairServicePackage(RepairServicePackage repairServicePackage) { this.repairServicePackage = repairServicePackage; }
+    public RepairBookingType getBookingType() { return bookingType; }
+    public void setBookingType(RepairBookingType bookingType) { this.bookingType = bookingType; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
     public String getPhone() { return phone; }
@@ -116,6 +163,34 @@ public class RepairBooking {
     public void setStatus(RepairBookingStatus status) { this.status = status; }
     public Double getTotalAmount() { return totalAmount; }
     public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
+    public Double getEstimatedTradeInAmount() { return estimatedTradeInAmount; }
+    public void setEstimatedTradeInAmount(Double estimatedTradeInAmount) { this.estimatedTradeInAmount = estimatedTradeInAmount; }
+    public Double getFinalTradeInAmount() { return finalTradeInAmount; }
+    public void setFinalTradeInAmount(Double finalTradeInAmount) { this.finalTradeInAmount = finalTradeInAmount; }
+    public Double getTradeInHealthScore() { return tradeInHealthScore; }
+    public void setTradeInHealthScore(Double tradeInHealthScore) { this.tradeInHealthScore = tradeInHealthScore; }
+    public Double getTradeInOfferRangeMin() { return tradeInOfferRangeMin; }
+    public void setTradeInOfferRangeMin(Double tradeInOfferRangeMin) { this.tradeInOfferRangeMin = tradeInOfferRangeMin; }
+    public Double getTradeInOfferRangeMax() { return tradeInOfferRangeMax; }
+    public void setTradeInOfferRangeMax(Double tradeInOfferRangeMax) { this.tradeInOfferRangeMax = tradeInOfferRangeMax; }
+    public String getTradeInConditionName() { return tradeInConditionName; }
+    public void setTradeInConditionName(String tradeInConditionName) { this.tradeInConditionName = tradeInConditionName; }
+    public String getTradeInConditionDescription() { return tradeInConditionDescription; }
+    public void setTradeInConditionDescription(String tradeInConditionDescription) { this.tradeInConditionDescription = tradeInConditionDescription; }
+    public Integer getTradeInBatteryHealth() { return tradeInBatteryHealth; }
+    public void setTradeInBatteryHealth(Integer tradeInBatteryHealth) { this.tradeInBatteryHealth = tradeInBatteryHealth; }
+    public String getTradeInFunctionalStatus() { return tradeInFunctionalStatus; }
+    public void setTradeInFunctionalStatus(String tradeInFunctionalStatus) { this.tradeInFunctionalStatus = tradeInFunctionalStatus; }
+    public String getTradeInVisualStatus() { return tradeInVisualStatus; }
+    public void setTradeInVisualStatus(String tradeInVisualStatus) { this.tradeInVisualStatus = tradeInVisualStatus; }
+    public String getTradeInInspectionImagesJson() { return tradeInInspectionImagesJson; }
+    public void setTradeInInspectionImagesJson(String tradeInInspectionImagesJson) { this.tradeInInspectionImagesJson = tradeInInspectionImagesJson; }
+    public String getTradeInAiImageResultsJson() { return tradeInAiImageResultsJson; }
+    public void setTradeInAiImageResultsJson(String tradeInAiImageResultsJson) { this.tradeInAiImageResultsJson = tradeInAiImageResultsJson; }
+    public String getTradeInVideoAnalysisJson() { return tradeInVideoAnalysisJson; }
+    public void setTradeInVideoAnalysisJson(String tradeInVideoAnalysisJson) { this.tradeInVideoAnalysisJson = tradeInVideoAnalysisJson; }
+    public String getTradeInVideoDataUrl() { return tradeInVideoDataUrl; }
+    public void setTradeInVideoDataUrl(String tradeInVideoDataUrl) { this.tradeInVideoDataUrl = tradeInVideoDataUrl; }
     public String getPaymentTxnRef() { return paymentTxnRef; }
     public void setPaymentTxnRef(String paymentTxnRef) { this.paymentTxnRef = paymentTxnRef; }
     public String getPaymentCheckoutUrl() { return paymentCheckoutUrl; }

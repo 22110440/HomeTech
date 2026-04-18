@@ -148,12 +148,15 @@
   flex: 1;
   margin-left: 280px;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .contentWrapper {
   padding: 2rem;
   max-width: 1600px;
   margin: 0 auto;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .loadingContainer {

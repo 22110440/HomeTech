@@ -1,0 +1,135 @@
+{
+  "brands": [
+    {
+      "id": "apple",
+      "name": "Apple"
+    },
+    {
+      "id": "samsung",
+      "name": "Samsung"
+    }
+  ],
+  "phone_types": [
+    {
+      "id": "iphone-13",
+      "brand_id": "apple",
+      "name": "iPhone 13"
+    },
+    {
+      "id": "galaxy-s",
+      "brand_id": "samsung",
+      "name": "Galaxy S"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "xuat-sac",
+      "name": "Xuất sắc",
+      "description": "Máy đẹp, ngoại hình rất mới, các chức năng hoạt động ổn định.",
+      "health_percent": 90.0
+    },
+    {
+      "id": "tot",
+      "name": "Tốt",
+      "description": "Máy có một vài vết nhẹ, pin và các tính năng vẫn sử dụng tốt.",
+      "health_percent": 75.0
+    },
+    {
+      "id": "trung-binh",
+      "name": "Trung bình",
+      "description": "Máy có nhiều vết xước hoặc một vài dấu hiệu hao mòn rõ ràng.",
+      "health_percent": 50.0
+    },
+    {
+      "id": "kem",
+      "name": "Kém",
+      "description": "Máy có nhiều lỗi ngoại hình, cần xem xét kỹ trước khi thu cũ đổi mới.",
+      "health_percent": 0.0
+    }
+  ],
+  "devices": [
+    {
+      "id": 1,
+      "brand_id": "apple",
+      "phone_type_id": "iphone-13",
+      "model": "iphone-13",
+      "display_name": "iphone-13",
+      "storage_options": {
+        "128GB": 0,
+        "256GB": 1200000,
+        "512GB": 2500000
+      },
+      "base_price": 9200000,
+      "floor_price": 4200000,
+      "ceiling_price": 10800000,
+      "condition_prices": {
+        "excellent": 9200000,
+        "good": 8460000,
+        "fair": 7540000,
+        "poor": 6250000
+      }
+    },
+    {
+      "id": 2,
+      "brand_id": "apple",
+      "phone_type_id": "iphone-13",
+      "model": "iphone-14-pro",
+      "display_name": "iphone-14-pro",
+      "storage_options": {
+        "128GB": 0,
+        "256GB": 1500000,
+        "512GB": 3200000
+      },
+      "base_price": 15600000,
+      "floor_price": 7600000,
+      "ceiling_price": 18400000,
+      "condition_prices": {
+        "excellent": 15600000,
+        "good": 14500000,
+        "fair": 13100000,
+        "poor": 10900000
+      }
+    },
+    {
+      "id": 3,
+      "brand_id": "samsung",
+      "phone_type_id": "galaxy-s",
+      "model": "samsung-s23",
+      "display_name": "samsung-s23",
+      "storage_options": {
+        "128GB": -600000,
+        "256GB": 0,
+        "512GB": 1800000
+      },
+      "base_price": 11400000,
+      "floor_price": 5400000,
+      "ceiling_price": 13200000,
+      "condition_prices": {
+        "excellent": 11400000,
+        "good": 10300000,
+        "fair": 9200000,
+        "poor": 7520000
+      }
+    }
+  ],
+  "deduction_settings": {
+    "visual": {
+      "Cracked": 0.12,
+      "Scratch": 0.04,
+      "Stain": 0.02,
+      "Oil-1": 0.025,
+      "Oil-2": 0.035
+    },
+    "functional": {
+      "camera": 0.06,
+      "speaker": 0.04,
+      "charging_port": 0.05,
+      "screen_replaced": 0.03,
+      "device_opened": 0.04
+    },
+    "battery": {
+      "threshold": 90,
+      "percent_per_point": 0.0035
+    }
+  }
+}

@@ -1,0 +1,345 @@
+﻿.page {
+  display: grid;
+  gap: 20px;
+  max-width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  color: #162031;
+}
+
+.subtitle,
+.muted,
+.rangeText,
+.sectionNote,
+.noteText {
+  color: #5f6f85;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.weekPicker {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+  color: #20304a;
+}
+
+.tableWrap {
+  max-width: 100%;
+  overflow: auto;
+  border: 1px solid #d7e0ea;
+  border-radius: 24px;
+  background: #fff;
+}
+
+.calendar {
+  width: 100%;
+  min-width: 1060px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.calendar th,
+.calendar td {
+  padding: 16px;
+  vertical-align: top;
+  border-bottom: 1px solid #e8eef5;
+}
+
+.calendar th {
+  position: sticky;
+  top: 0;
+  background: #f8fbff;
+  z-index: 1;
+  text-align: left;
+  color: #20304a;
+}
+
+.dayColumn,
+.dayLabel {
+  min-width: 120px;
+  font-weight: 800;
+  color: #20304a;
+  background: #fbfdff;
+}
+
+.cell {
+  min-width: 300px;
+}
+
+.emptyCell {
+  min-height: 70px;
+  color: #93a0b4;
+}
+
+.bookingCard,
+.sectionCard,
+.modalCard,
+.detailModal {
+  background: #fff;
+  border: 1px solid #dde6f0;
+  border-radius: 24px;
+}
+
+.bookingCard {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
+  box-shadow: 0 18px 36px rgba(18, 35, 63, 0.08);
+}
+
+.cardHeader,
+.infoLine,
+.actionRow,
+.modalHeader,
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.infoLine span,
+.summaryGrid span {
+  color: #72829a;
+  font-size: 14px;
+}
+
+.infoLine strong,
+.summaryGrid strong {
+  color: #182536;
+}
+
+.statusBadge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e9f7f1;
+  color: #0f7a5f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.closeButton {
+  border: none;
+  border-radius: 14px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #0f8b8d 0%, #2ca58d 100%);
+  color: #fff;
+}
+
+.secondaryButton,
+.closeButton {
+  background: #edf3fa;
+  color: #20304a;
+}
+
+.dangerButton {
+  background: #fff1f2;
+  color: #c2414a;
+}
+
+.errorBanner,
+.successBanner,
+.lockedBox {
+  padding: 14px 18px;
+  border-radius: 18px;
+  font-weight: 600;
+}
+
+.errorBanner {
+  background: #fff1f2;
+  color: #b42338;
+}
+
+.successBanner {
+  background: #edfdf3;
+  color: #067647;
+}
+
+.loadingState {
+  padding: 32px;
+  border-radius: 24px;
+  background: #fff;
+  border: 1px solid #dde6f0;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.58);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 50;
+}
+
+.modalCard,
+.detailModal {
+  width: min(1100px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px;
+}
+
+.formGrid,
+.detailGrid,
+.summaryGrid,
+.imageGrid,
+.cropGrid {
+  display: grid;
+  gap: 16px;
+}
+
+.formGrid,
+.summaryGrid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.detailGrid {
+  margin-top: 20px;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  color: #20304a;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid #cfd9e6;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+  color: #182536;
+  background: #fff;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.sectionCard {
+  padding: 20px;
+}
+
+.sectionCard h3,
+.modalHeader h2 {
+  margin: 0 0 12px;
+  color: #182536;
+}
+
+.summaryGrid {
+  margin-top: 8px;
+}
+
+.summaryGrid > div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #e2ebf4;
+}
+
+.imageGrid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.imageCard,
+.cropCard {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid #e2ebf4;
+  background: #fbfdff;
+}
+
+.previewImage,
+.cropImage,
+.videoPlayer {
+  width: 100%;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.previewImage,
+.cropImage {
+  min-height: 180px;
+  background: #eef3f8;
+}
+
+.videoPlayer {
+  margin-top: 12px;
+  background: #111827;
+}
+
+.compactList {
+  margin: 0;
+  padding-left: 20px;
+  color: #20304a;
+}
+
+.emptyPreview {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #eef3f8;
+  color: #7a869a;
+}
+
+.lockedBox {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+@media (max-width: 900px) {
+  .modalBackdrop {
+    padding: 12px;
+  }
+
+  .modalCard,
+  .detailModal {
+    padding: 18px;
+  }
+
+  .calendar th,
+  .calendar td {
+    padding: 12px;
+  }
+}

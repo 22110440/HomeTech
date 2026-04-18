@@ -6,5 +6,6 @@ public enum RepairBookingStatus {
     PAID,
     IN_PROGRESS,
     CANCELLED,
+    FAILED,
     COMPLETED
 }

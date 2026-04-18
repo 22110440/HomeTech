@@ -1052,3 +1052,44 @@ export const chatAPI = {
   },
 };
 
+const TRADE_IN_API_BASE_URL = 'http://localhost:8001';
+
+const tradeInApi = axios.create({
+  baseURL: TRADE_IN_API_BASE_URL,
+});
+
+export const tradeInAPI = {
+  getPricing: async () => {
+    const response = await tradeInApi.get('/pricing');
+    return response.data;
+  },
+
+  savePricing: async (payload) => {
+    const response = await tradeInApi.post('/pricing', payload);
+    return response.data;
+  },
+
+  analyzeTradeInImages: async (payload) => {
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, value);
+      }
+    });
+    const response = await tradeInApi.post('/analyze/images', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  analyzeTradeInVideo: async (file, sampleInterval = 15) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('sample_interval', String(sampleInterval));
+    const response = await tradeInApi.post('/analyze/video', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+};
+
