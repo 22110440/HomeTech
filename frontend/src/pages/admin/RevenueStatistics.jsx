@@ -12,6 +12,7 @@ import {
 } from 'chart.js';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { adminAPI, getApiErrorMessage } from '../../services/api';
 import styles from './RevenueStatistics.module.css';
 
 // Register Chart.js components
@@ -42,7 +43,6 @@ export default function RevenueStatistics() {
     useEffect(() => {
         fetchCategories();
         fetchProducts();
-        fetchData();
     }, []);
 
     useEffect(() => {
@@ -51,13 +51,63 @@ export default function RevenueStatistics() {
         }
     }, [startDate, endDate, groupBy, categoryId, productId]);
 
+    const extractRevenueStats = (payload) => {
+        const candidates = [
+            payload,
+            payload?.data,
+            payload?.payload,
+            payload?.result,
+            payload?.data?.data
+        ];
+
+        for (const candidate of candidates) {
+            if (
+                candidate &&
+                typeof candidate === 'object' &&
+                (Object.prototype.hasOwnProperty.call(candidate, 'totalRevenue') ||
+                    Object.prototype.hasOwnProperty.call(candidate, 'orderCount') ||
+                    Array.isArray(candidate.groupedData))
+            ) {
+                return {
+                    totalRevenue: Number(candidate.totalRevenue || 0),
+                    orderCount: Number(candidate.orderCount || 0),
+                    averageOrderValue: Number(candidate.averageOrderValue || 0),
+                    groupedData: Array.isArray(candidate.groupedData) ? candidate.groupedData : []
+                };
+            }
+        }
+
+        return null;
+    };
+
+    const extractTopProducts = (payload) => {
+        const candidates = [
+            payload,
+            payload?.data,
+            payload?.payload,
+            payload?.result,
+            payload?.data?.data
+        ];
+
+        for (const candidate of candidates) {
+            if (Array.isArray(candidate)) {
+                return candidate;
+            }
+        }
+        return [];
+    };
+
     const fetchCategories = async () => {
         try {
-            const response = await fetch('/api/categories');
-            const data = await response.json();
-            if (data.success) {
-                setCategories(data.data);
+            const payload = await adminAPI.getAllCategories();
+            if (Array.isArray(payload)) {
+                setCategories(payload);
+                return;
             }
+            if (payload?.success === false) {
+                throw new Error(payload?.message || payload?.error || 'Không thể tải danh mục');
+            }
+            setCategories(Array.isArray(payload?.data) ? payload.data : []);
         } catch (error) {
             console.error('Error fetching categories:', error);
         }
@@ -65,11 +115,15 @@ export default function RevenueStatistics() {
 
     const fetchProducts = async () => {
         try {
-            const response = await fetch('/api/products');
-            const data = await response.json();
-            if (data.success) {
-                setProducts(data.data);
+            const payload = await adminAPI.getAllProducts();
+            if (Array.isArray(payload)) {
+                setProducts(payload);
+                return;
             }
+            if (payload?.success === false) {
+                throw new Error(payload?.message || payload?.error || 'Không thể tải sản phẩm');
+            }
+            setProducts(Array.isArray(payload?.data) ? payload.data : []);
         } catch (error) {
             console.error('Error fetching products:', error);
         }
@@ -78,61 +132,52 @@ export default function RevenueStatistics() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem('accessToken');
-            console.log('🔑 Token:', token ? 'Present' : 'Missing');
-
-            const headers = {
-                'Authorization': `Bearer ${token}`
-            };
-
-            // Build query params
-            const params = new URLSearchParams({
+            const statsParams = {
                 startDate,
                 endDate,
                 groupBy
-            });
-            if (categoryId) params.append('categoryId', categoryId);
-            if (productId) params.append('productId', productId);
+            };
+            if (categoryId) statsParams.categoryId = categoryId;
+            if (productId) statsParams.productId = productId;
 
-            console.log('📊 Fetching revenue stats with params:', params.toString());
-
-            // Fetch revenue stats
-            const statsResponse = await fetch(`/api/revenue/stats?${params}`, { headers });
-            console.log('📈 Stats response status:', statsResponse.status);
-
-            const statsData = await statsResponse.json();
-            console.log('📈 Stats data:', statsData);
-
-            if (statsData.success) {
-                setStats(statsData.data);
-                console.log('✅ Stats loaded successfully');
-            } else {
-                console.error('❌ Stats error:', statsData.message);
-                alert('Không thể tải thống kê: ' + statsData.message);
+            const statsPayload = await adminAPI.getRevenueStats(statsParams);
+            const parsedStats = extractRevenueStats(statsPayload);
+            if (!parsedStats) {
+                console.error('[Revenue] Unexpected stats payload shape:', statsPayload);
+                if (typeof statsPayload === 'string') {
+                    if (/<!doctype html>|<html/i.test(statsPayload)) {
+                        throw new Error('Phiên đăng nhập không hợp lệ hoặc không đủ quyền ADMIN. Vui lòng đăng nhập lại tài khoản admin.');
+                    }
+                    throw new Error('Backend trả về dữ liệu không hợp lệ (không phải JSON thống kê).');
+                }
+                throw new Error(
+                    statsPayload?.message ||
+                    statsPayload?.error ||
+                    'Không thể tải thống kê doanh thu'
+                );
             }
+            setStats(parsedStats);
 
-            // Fetch top products
-            const topParams = new URLSearchParams({ startDate, endDate });
-            if (categoryId) topParams.append('categoryId', categoryId);
+            const topParams = { startDate, endDate };
+            if (categoryId) topParams.categoryId = categoryId;
 
-            console.log('🏆 Fetching top products with params:', topParams.toString());
-
-            const topResponse = await fetch(`/api/revenue/top-products?${topParams}`, { headers });
-            console.log('🏆 Top products response status:', topResponse.status);
-
-            const topData = await topResponse.json();
-            console.log('🏆 Top products data:', topData);
-
-            if (topData.success) {
-                setTopProducts(topData.data);
-                console.log('✅ Top products loaded successfully');
-            } else {
-                console.error('❌ Top products error:', topData.message);
-            }
+            const topPayload = await adminAPI.getRevenueTopProducts(topParams);
+            setTopProducts(extractTopProducts(topPayload));
 
         } catch (error) {
-            console.error('💥 Error fetching data:', error);
-            alert('Có lỗi xảy ra: ' + error.message);
+            const requestUrl = error?.config?.url || '/revenue';
+            const requestMethod = (error?.config?.method || 'get').toUpperCase();
+            const status = error?.response?.status;
+            const errorMessage = getApiErrorMessage(
+                error,
+                'Có lỗi xảy ra khi tải dữ liệu doanh thu.'
+            );
+            console.error(`[Revenue] ${requestMethod} ${requestUrl} failed`, {
+                status,
+                responseData: error?.response?.data,
+                message: error?.message
+            });
+            alert(errorMessage);
         } finally {
             setLoading(false);
         }

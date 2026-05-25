@@ -5,10 +5,10 @@ import com.hometech.hometech.enums.OrderStatus;
 import com.hometech.hometech.model.Order;
 import com.hometech.hometech.model.OrderItem;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
@@ -25,6 +25,7 @@ public class RevenueService {
     /**
      * Get revenue statistics with grouping and filtering
      */
+    @Transactional(readOnly = true)
     public Map<String, Object> getRevenueStats(
             LocalDate startDate,
             LocalDate endDate,
@@ -36,12 +37,7 @@ public class RevenueService {
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
         // Get all orders (except CANCELLED) in date range
-        List<Order> orders = orderRepository.findAll().stream()
-                .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
-                .filter(order -> order.getCreatedAt() != null &&
-                        !order.getCreatedAt().isBefore(startDateTime) &&
-                        !order.getCreatedAt().isAfter(endDateTime))
-                .collect(Collectors.toList());
+        List<Order> orders = getOrdersInRange(startDateTime, endDateTime);
 
         // Filter by category or product if specified
         if (categoryId != null || productId != null) {
@@ -68,6 +64,7 @@ public class RevenueService {
     /**
      * Get top 5 products by revenue
      */
+    @Transactional(readOnly = true)
     public List<Map<String, Object>> getTopProducts(
             LocalDate startDate,
             LocalDate endDate,
@@ -77,12 +74,7 @@ public class RevenueService {
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
         // Get all orders (except CANCELLED) in date range
-        List<Order> orders = orderRepository.findAll().stream()
-                .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
-                .filter(order -> order.getCreatedAt() != null &&
-                        !order.getCreatedAt().isBefore(startDateTime) &&
-                        !order.getCreatedAt().isAfter(endDateTime))
-                .collect(Collectors.toList());
+        List<Order> orders = getOrdersInRange(startDateTime, endDateTime);
 
         // Collect all order items
         Map<Long, ProductRevenue> productRevenueMap = new HashMap<>();
@@ -92,8 +84,7 @@ public class RevenueService {
                 for (OrderItem item : order.getItems()) {
                     if (item.getProduct() != null) {
                         // Filter by category if specified
-                        if (categoryId != null && item.getProduct().getCategory() != null &&
-                                !item.getProduct().getCategory().getId().equals(categoryId)) {
+                        if (!matchesCategory(item, categoryId)) {
                             continue;
                         }
 
@@ -133,22 +124,22 @@ public class RevenueService {
 
     // Helper methods
 
+    private List<Order> getOrdersInRange(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        return orderRepository.findAllWithRevenueRelations().stream()
+                .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
+                .filter(order -> order.getCreatedAt() != null &&
+                        !order.getCreatedAt().isBefore(startDateTime) &&
+                        !order.getCreatedAt().isAfter(endDateTime))
+                .collect(Collectors.toList());
+    }
+
     private boolean hasMatchingItems(Order order, Long categoryId, Long productId) {
         if (order.getItems() == null) return false;
         
         return order.getItems().stream().anyMatch(item -> {
             if (item.getProduct() == null) return false;
             
-            if (productId != null && !item.getProduct().getId().equals(productId)) {
-                return false;
-            }
-            
-            if (categoryId != null && item.getProduct().getCategory() != null &&
-                    !item.getProduct().getCategory().getId().equals(categoryId)) {
-                return false;
-            }
-            
-            return true;
+            return matchesProduct(item, productId) && matchesCategory(item, categoryId);
         });
     }
 
@@ -162,12 +153,11 @@ public class RevenueService {
                 if (item.getProduct() == null) continue;
                 
                 // Apply filters
-                if (productId != null && !item.getProduct().getId().equals(productId)) {
+                if (!matchesProduct(item, productId)) {
                     continue;
                 }
                 
-                if (categoryId != null && item.getProduct().getCategory() != null &&
-                        !item.getProduct().getCategory().getId().equals(categoryId)) {
+                if (!matchesCategory(item, categoryId)) {
                     continue;
                 }
                 
@@ -196,12 +186,11 @@ public class RevenueService {
                 if (item.getProduct() == null) continue;
                 
                 // Apply filters
-                if (productId != null && !item.getProduct().getId().equals(productId)) {
+                if (!matchesProduct(item, productId)) {
                     continue;
                 }
                 
-                if (categoryId != null && item.getProduct().getCategory() != null &&
-                        !item.getProduct().getCategory().getId().equals(categoryId)) {
+                if (!matchesCategory(item, categoryId)) {
                     continue;
                 }
                 
@@ -245,6 +234,25 @@ public class RevenueService {
             default:
                 return date.toString();
         }
+    }
+
+    private boolean matchesProduct(OrderItem item, Long productId) {
+        if (productId == null) {
+            return true;
+        }
+        return item.getProduct() != null
+                && item.getProduct().getId() != null
+                && item.getProduct().getId().equals(productId);
+    }
+
+    private boolean matchesCategory(OrderItem item, Long categoryId) {
+        if (categoryId == null) {
+            return true;
+        }
+        return item.getProduct() != null
+                && item.getProduct().getCategory() != null
+                && item.getProduct().getCategory().getId() != null
+                && item.getProduct().getCategory().getId().equals(categoryId);
     }
 
     // Inner class for product revenue tracking

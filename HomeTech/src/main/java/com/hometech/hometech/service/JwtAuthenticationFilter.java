@@ -72,9 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
         } catch (Exception e) {
-            return;
-            // ❗ KHÔNG làm gì ở đây
-            // Để Spring Security xử lý Unauthorized ở tầng sau
+            // Token lỗi/hết hạn: xoá context và cho đi tiếp để Security trả 401 chuẩn.
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

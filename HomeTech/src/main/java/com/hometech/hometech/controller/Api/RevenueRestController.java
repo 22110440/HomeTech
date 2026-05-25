@@ -1,6 +1,8 @@
 package com.hometech.hometech.controller.Api;
 
 import com.hometech.hometech.service.RevenueService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +18,7 @@ import java.util.Map;
 @RequestMapping("/api/revenue")
 @PreAuthorize("hasRole('ADMIN')")
 public class RevenueRestController {
+    private static final Logger log = LoggerFactory.getLogger(RevenueRestController.class);
 
     private final RevenueService revenueService;
 
@@ -81,7 +84,10 @@ public class RevenueRestController {
             return buildResponse(true, "Lấy thống kê doanh thu thành công", stats, null, HttpStatus.OK);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(
+                    "Failed to fetch revenue stats. startDate={}, endDate={}, groupBy={}, categoryId={}, productId={}",
+                    startDate, endDate, groupBy, categoryId, productId, e
+            );
             return buildResponse(false, "Có lỗi khi lấy thống kê doanh thu", null,
                     e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -121,7 +127,10 @@ public class RevenueRestController {
             return buildResponse(true, "Lấy top sản phẩm thành công", topProducts, null, HttpStatus.OK);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(
+                    "Failed to fetch top revenue products. startDate={}, endDate={}, categoryId={}",
+                    startDate, endDate, categoryId, e
+            );
             return buildResponse(false, "Có lỗi khi lấy top sản phẩm", null,
                     e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

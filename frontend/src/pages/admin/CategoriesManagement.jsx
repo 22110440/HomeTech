@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { adminAPI } from '../../services/api';
+import { adminAPI, getApiErrorMessage } from '../../services/api';
 import styles from './CategoriesManagement.module.css';
 
 export default function CategoriesManagement() {
@@ -19,31 +19,18 @@ export default function CategoriesManagement() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      const payload = await adminAPI.getAllCategories();
+      if (Array.isArray(payload)) {
+        setCategories(payload);
+        return;
       }
-
-      const response = await fetch('/api/categories', { headers });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (payload?.success === false) {
+        throw new Error(payload?.message || payload?.error || 'Không thể tải danh sách danh mục');
       }
-
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.data);
-      } else {
-        console.error('Server returned error:', data.message);
-        alert('Không thể tải danh sách danh mục: ' + data.message);
-      }
+      setCategories(Array.isArray(payload?.data) ? payload.data : []);
     } catch (error) {
       console.error('Error fetching categories:', error);
-      alert('Có lỗi xảy ra khi tải danh sách: ' + error.message);
+      alert(getApiErrorMessage(error, 'Có lỗi xảy ra khi tải danh sách danh mục.'));
     } finally {
       setLoading(false);
     }
@@ -58,13 +45,6 @@ export default function CategoriesManagement() {
     }
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      };
-
-      let response;
       // Gửi kèm danh sách thuộc tính để backend lưu/cập nhật
       const payload = {
         ...formData,
@@ -74,35 +54,24 @@ export default function CategoriesManagement() {
           code: attr.code || null,
         })),
       };
+      let data;
       if (editingCategory) {
-        // Update
-        response = await fetch(`/api/categories/${editingCategory.id}`, {
-          method: 'PUT',
-          headers,
-          body: JSON.stringify(payload)
-        });
+        data = await adminAPI.updateCategory(editingCategory.id, payload);
       } else {
-        // Create
-        response = await fetch('/api/categories', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(payload)
-        });
+        data = await adminAPI.createCategory(payload);
       }
 
-      const data = await response.json();
-
-      if (data.success) {
+      if (data?.success === false) {
+        alert(data?.message || data?.error || 'Có lỗi xảy ra');
+      } else {
         alert(editingCategory ? 'Cập nhật thành công' : 'Tạo mới thành công');
         setShowModal(false);
         fetchCategories();
         resetForm();
-      } else {
-        alert(data.message || 'Có lỗi xảy ra');
       }
     } catch (error) {
       console.error('Error saving category:', error);
-      alert('Có lỗi xảy ra khi lưu danh mục');
+      alert(getApiErrorMessage(error, 'Có lỗi xảy ra khi lưu danh mục.'));
     }
   };
 
@@ -110,24 +79,17 @@ export default function CategoriesManagement() {
     if (!window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) return;
 
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await fetch(`/api/categories/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      const data = await response.json();
+      const data = await adminAPI.deleteCategory(id);
 
-      if (data.success) {
+      if (data?.success === false) {
+        alert(data?.message || data?.error || 'Không thể xóa danh mục');
+      } else {
         alert('Xóa thành công');
         fetchCategories();
-      } else {
-        alert(data.message || 'Không thể xóa danh mục');
       }
     } catch (error) {
       console.error('Error deleting category:', error);
-      alert('Có lỗi xảy ra khi xóa');
+      alert(getApiErrorMessage(error, 'Có lỗi xảy ra khi xóa danh mục.'));
     }
   };
 

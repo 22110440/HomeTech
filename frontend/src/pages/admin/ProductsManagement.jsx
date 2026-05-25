@@ -1,6 +1,6 @@
 // src/pages/admin/ProductsManagement.jsx
 import { useEffect, useMemo, useState } from 'react';
-import { adminAPI } from '../../services/api';
+import { adminAPI, getApiErrorMessage } from '../../services/api';
 import styles from './ProductsManagement.module.css';
 
 const defaultFormState = {
@@ -45,24 +45,32 @@ export default function ProductsManagement() {
 
   const loadProducts = async () => {
     try {
-      const response = await adminAPI.getAllProducts();
-      if (response.success) {
-        setProducts(response.data || []);
-      } else {
-        throw new Error(response.message || 'Không thể tải sản phẩm');
+      const payload = await adminAPI.getAllProducts();
+      if (Array.isArray(payload)) {
+        setProducts(payload);
+        return;
       }
+      if (payload?.success === false) {
+        throw new Error(payload?.message || payload?.error || 'Không thể tải sản phẩm');
+      }
+      setProducts(Array.isArray(payload?.data) ? payload.data : []);
     } catch (error) {
       console.error('loadProducts error:', error);
-      alert(error.message || 'Lỗi tải danh sách sản phẩm');
+      alert(getApiErrorMessage(error, 'Lỗi tải danh sách sản phẩm'));
     }
   };
 
   const loadCategories = async () => {
     try {
-      const response = await adminAPI.getAllCategories();
-      if (response.success) {
-        setCategories(response.data || []);
+      const payload = await adminAPI.getAllCategories();
+      if (Array.isArray(payload)) {
+        setCategories(payload);
+        return;
       }
+      if (payload?.success === false) {
+        throw new Error(payload?.message || payload?.error || 'Không thể tải danh mục');
+      }
+      setCategories(Array.isArray(payload?.data) ? payload.data : []);
     } catch (error) {
       console.error('loadCategories error:', error);
     }
@@ -99,27 +107,25 @@ export default function ProductsManagement() {
   const fetchProductImages = async (productId) => {
     setLoadingImages(true);
     try {
-      const response = await adminAPI.getProductImages(productId);
-      if (response.success) {
-        // Sắp xếp ảnh theo displayOrder
-        const sortedImages = (response.data || []).sort((a, b) => {
-          const orderA = a.displayOrder != null ? a.displayOrder : 0;
-          const orderB = b.displayOrder != null ? b.displayOrder : 0;
-          return orderA - orderB;
-        });
-        setExistingImages(sortedImages);
-        // Lưu giá trị ban đầu của displayOrder
-        const originalOrders = {};
-        sortedImages.forEach((img) => {
-          originalOrders[img.id] = img.displayOrder != null ? img.displayOrder : 0;
-        });
-        setOriginalDisplayOrders(originalOrders);
-      } else {
-        throw new Error(response.message || 'Không thể tải ảnh sản phẩm');
+      const payload = await adminAPI.getProductImages(productId);
+      if (payload?.success === false) {
+        throw new Error(payload?.message || payload?.error || 'Không thể tải ảnh sản phẩm');
       }
+      const imageList = Array.isArray(payload) ? payload : (payload?.data || []);
+      const sortedImages = imageList.sort((a, b) => {
+        const orderA = a.displayOrder != null ? a.displayOrder : 0;
+        const orderB = b.displayOrder != null ? b.displayOrder : 0;
+        return orderA - orderB;
+      });
+      setExistingImages(sortedImages);
+      const originalOrders = {};
+      sortedImages.forEach((img) => {
+        originalOrders[img.id] = img.displayOrder != null ? img.displayOrder : 0;
+      });
+      setOriginalDisplayOrders(originalOrders);
     } catch (error) {
       console.error('fetchProductImages error:', error);
-      alert(error.message || 'Không thể tải ảnh sản phẩm');
+      alert(getApiErrorMessage(error, 'Không thể tải ảnh sản phẩm'));
     } finally {
       setLoadingImages(false);
     }
@@ -384,8 +390,7 @@ export default function ProductsManagement() {
       closeModal();
     } catch (error) {
       console.error('handleSubmit error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Có lỗi xảy ra';
-      alert(errorMessage);
+      alert(getApiErrorMessage(error, 'Có lỗi xảy ra khi lưu sản phẩm'));
       setSubmitting(false);
     }
   };
@@ -400,7 +405,7 @@ export default function ProductsManagement() {
       alert('Đã xóa sản phẩm');
       await loadProducts();
     } catch (error) {
-      alert(error.message || 'Không thể xóa sản phẩm');
+      alert(getApiErrorMessage(error, 'Không thể xóa sản phẩm'));
     }
   };
 
@@ -420,7 +425,7 @@ export default function ProductsManagement() {
       alert('Đã xóa ảnh');
     } catch (error) {
       console.error('handleDeleteImage error:', error);
-      alert(error.message || 'Không thể xóa ảnh');
+      alert(getApiErrorMessage(error, 'Không thể xóa ảnh'));
     }
   };
 
@@ -443,8 +448,7 @@ export default function ProductsManagement() {
       }
     } catch (error) {
       console.error('handleUpdateDisplayOrder error:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Không thể cập nhật thứ tự hiển thị';
-      alert(errorMessage);
+      alert(getApiErrorMessage(error, 'Không thể cập nhật thứ tự hiển thị'));
       // Reload images để khôi phục giá trị cũ
       if (editingProduct?.id) {
         await fetchProductImages(editingProduct.id);

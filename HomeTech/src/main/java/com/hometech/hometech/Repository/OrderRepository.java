@@ -27,4 +27,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o WHERE o.id = :id")
     Optional<Order> findByIdWithRelations(@Param("id") Long id);
 
+    @EntityGraph(attributePaths = {"items", "items.product", "items.product.category"})
+    @Query("SELECT DISTINCT o FROM Order o")
+    List<Order> findAllWithRevenueRelations();
+
 }

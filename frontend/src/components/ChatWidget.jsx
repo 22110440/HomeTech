@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
+import { WS_ENDPOINT } from '../config/runtime';
 import styles from './ChatWidget.module.css';
 
 const ChatWidget = () => {
@@ -36,8 +37,25 @@ const ChatWidget = () => {
         ...(options.headers || {}),
       },
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+
+    const rawText = await res.text();
+    const payload = rawText ? (() => {
+      try {
+        return JSON.parse(rawText);
+      } catch {
+        return null;
+      }
+    })() : null;
+
+    if (!res.ok) {
+      throw new Error(
+        payload?.message ||
+          payload?.error ||
+          `Request failed with status ${res.status}`
+      );
+    }
+
+    return payload || {};
   };
 
   const fetchFileWithAuth = async (messageId) => {
@@ -79,7 +97,7 @@ const ChatWidget = () => {
     if (stompClientRef.current) return;
 
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      webSocketFactory: () => new SockJS(WS_ENDPOINT),
       reconnectDelay: 5000,
       debug: () => {},
     });
@@ -183,12 +201,7 @@ const ChatWidget = () => {
       >
         {/* Wrapper để xếp dọc text + ảnh */}
         <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems:
-              m.senderType === 'CUSTOMER' ? 'flex-end' : 'flex-start',
-          }}
+          className={styles.messageStack}
         >
           {/* 🔵 BUBBLE TEXT */}
           {m.content && (

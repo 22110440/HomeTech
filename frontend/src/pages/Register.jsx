@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import { BACKEND_ORIGIN } from '../config/runtime';
 import styles from './Register.module.css';
 
 function Register() {
@@ -65,7 +66,7 @@ function Register() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = `${BACKEND_ORIGIN}/oauth2/authorization/google`;
   };
 
   return (
@@ -200,4 +201,3 @@ function Register() {
 }
 
 export default Register;
-

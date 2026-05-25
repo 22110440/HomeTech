@@ -160,6 +160,14 @@ public class SecurityConfig {
                                         .write("{\"error\":\"Unauthorized - Invalid or missing JWT\"}");
                             }
                         })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            if (!response.isCommitted()) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                response.getWriter()
+                                        .write("{\"error\":\"Forbidden - You do not have permission to access this resource\"}");
+                            }
+                        })
                 )
 
 

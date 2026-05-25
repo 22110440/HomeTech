@@ -1,6 +1,40 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/runtime';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+export const getApiErrorMessage = (
+  error,
+  fallback = 'Có lỗi xảy ra. Vui lòng thử lại.'
+) => {
+  const data = error?.response?.data;
+  const rawMessage =
+    typeof error?.message === 'string' ? error.message.trim() : '';
+
+  if (typeof data === 'string' && data.trim()) {
+    return data;
+  }
+
+  if (data && typeof data === 'object') {
+    const message = data.message || data.error;
+    if (typeof message === 'string' && message.trim()) {
+      return message;
+    }
+    return fallback;
+  }
+
+  if (!error?.response) {
+    if (
+      rawMessage &&
+      !/network error|failed to fetch|econnrefused|timeout|load failed/i.test(
+        rawMessage
+      )
+    ) {
+      return rawMessage;
+    }
+    return 'Không thể kết nối backend. Vui lòng kiểm tra server và database.';
+  }
+
+  return rawMessage || fallback;
+};
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -486,6 +520,17 @@ export const adminAPI = {
 
   deleteCategory: async (id) => {
     const response = await api.delete(`/categories/${id}`);
+    return response.data;
+  },
+
+  // Revenue
+  getRevenueStats: async (params) => {
+    const response = await api.get('/revenue/stats', { params });
+    return response.data;
+  },
+
+  getRevenueTopProducts: async (params) => {
+    const response = await api.get('/revenue/top-products', { params });
     return response.data;
   },
 
@@ -1092,4 +1137,3 @@ export const tradeInAPI = {
     return response.data;
   },
 };
-

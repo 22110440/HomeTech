@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { chatAPI } from '../../services/api';
+import { WS_ENDPOINT } from '../../config/runtime';
 import styles from './ChatManagement.module.css';
 
 function ChatManagement({ initialUserId }) {
@@ -105,7 +106,7 @@ function ChatManagement({ initialUserId }) {
 
     if (!stompClientRef.current) {
       const client = new Client({
-        webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+        webSocketFactory: () => new SockJS(WS_ENDPOINT),
         reconnectDelay: 5000,
         debug: () => {},
       });
@@ -331,5 +332,3 @@ function ChatManagement({ initialUserId }) {
 }
 
 export default ChatManagement;
-
-

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import { BACKEND_ORIGIN } from '../config/runtime';
 import styles from './Login.module.css';
 
 function Login() {
@@ -81,7 +82,7 @@ function Login() {
 
   const handleGoogleLogin = () => {
     // Redirect đến backend OAuth2 endpoint
-    window.location.href = 'http://localhost:8080/oauth2/authorization/google';
+    window.location.href = `${BACKEND_ORIGIN}/oauth2/authorization/google`;
   };
 
   return (
@@ -172,4 +173,3 @@ function Login() {
 }
 
 export default Login;
-

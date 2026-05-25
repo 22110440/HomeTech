@@ -143,18 +143,32 @@
   justify-content: flex-start;
 }
 
-.bubble {
+.messageStack {
+  display: flex;
+  flex-direction: column;
   max-width: 75%;
-  width: fit-content;
+}
+
+.messageCustomer .messageStack {
+  align-items: flex-end;
+}
+
+.messageAdmin .messageStack {
+  align-items: flex-start;
+}
+
+.bubble {
+  max-width: 100%;
+  width: auto;
   padding: 8px 12px;
   border-radius: 999px;
   font-size: 14px;
   line-height: 1.4;
 
-  display: inline-block;      /* thay cho fit-content */
-  white-space: pre-wrap;      /* giữ xuống dòng */
-  word-break: break-word;     /* không cắt chữ */
-  overflow-wrap: anywhere;    /* chống mất chữ */
+  display: inline-block;
+  white-space: pre-wrap;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .messageCustomer .bubble {
@@ -220,5 +234,4 @@
     border-radius: 16px 16px 0 0;
   }
 }
-
 
