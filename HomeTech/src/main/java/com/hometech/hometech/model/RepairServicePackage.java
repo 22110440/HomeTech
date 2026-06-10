@@ -1,5 +1,6 @@
 package com.hometech.hometech.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -27,6 +28,17 @@ public class RepairServicePackage {
 
     @Column(length = 1000)
     private String imageUrl;
+
+    @Lob
+    @JsonIgnore
+    @Column(columnDefinition = "LONGBLOB")
+    private byte[] imageData;
+
+    @Column(length = 100)
+    private String imageContentType;
+
+    @Column(length = 255)
+    private String imageFileName;
 
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal price;
@@ -104,6 +116,30 @@ public class RepairServicePackage {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public byte[] getImageData() {
+        return imageData;
+    }
+
+    public void setImageData(byte[] imageData) {
+        this.imageData = imageData;
+    }
+
+    public String getImageContentType() {
+        return imageContentType;
+    }
+
+    public void setImageContentType(String imageContentType) {
+        this.imageContentType = imageContentType;
+    }
+
+    public String getImageFileName() {
+        return imageFileName;
+    }
+
+    public void setImageFileName(String imageFileName) {
+        this.imageFileName = imageFileName;
     }
 
     public BigDecimal getPrice() {

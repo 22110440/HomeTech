@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import styles from './Profile.module.css';
 
@@ -21,6 +21,7 @@ function Profile() {
 
   useEffect(() => {
     loadUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUserInfo = async () => {
@@ -192,17 +193,6 @@ function Profile() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link to="/" className={styles.logo}>
-            <span className={styles.logoText}>HomeTech</span>
-          </Link>
-          <Link to="/" className={styles.backButton}>
-            ← Về trang chủ
-          </Link>
-        </div>
-      </header>
-
       <div className={styles.content}>
         <div className={styles.titleSection}>
           <h1 className={styles.title}>Thông tin cá nhân</h1>
@@ -407,4 +397,3 @@ function Profile() {
 }
 
 export default Profile;
-

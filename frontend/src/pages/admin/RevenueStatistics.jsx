@@ -49,6 +49,7 @@ export default function RevenueStatistics() {
         if (startDate && endDate) {
             fetchData();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [startDate, endDate, groupBy, categoryId, productId]);
 
     const extractRevenueStats = (payload) => {

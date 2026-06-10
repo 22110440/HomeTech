@@ -14,12 +14,14 @@ function Favorites() {
 
   useEffect(() => {
     loadUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (userInfo && userInfo.id) {
       loadFavorites();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo]);
 
   const loadUserInfo = async () => {
@@ -113,17 +115,6 @@ function Favorites() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link to="/" className={styles.logo}>
-            <span className={styles.logoText}>HomeTech</span>
-          </Link>
-          <Link to="/" className={styles.backButton}>
-            ← Về trang chủ
-          </Link>
-        </div>
-      </header>
-
       <div className={styles.content}>
         <h1 className={styles.title}>Danh sách yêu thích</h1>
         {error && <div className={styles.errorMessage}>{error}</div>}
@@ -175,4 +166,3 @@ function Favorites() {
 }
 
 export default Favorites;
-

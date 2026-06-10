@@ -1,6 +1,6 @@
 .container {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f5f5f5;
 }
 
 .header {
@@ -28,7 +28,7 @@
 .logoText {
     font-size: 1.5rem;
     font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -36,7 +36,7 @@
 
 .backButton {
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
     color: white;
     text-decoration: none;
     border-radius: 0.5rem;
@@ -46,7 +46,7 @@
 
 .backButton:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
 .content {
@@ -62,7 +62,7 @@
 .title {
     font-size: 2rem;
     font-weight: 700;
-    color: white;
+    color: #1f2937;
     margin: 0;
 }
 
@@ -103,25 +103,27 @@
 .dateInput:focus,
 .select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
 .summaryCard {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #ffffff;
+    border: 1px solid #fee2e2;
+    border-left: 6px solid #dc2626;
     border-radius: 1rem;
     padding: 2rem;
     margin-bottom: 2rem;
     display: flex;
     align-items: center;
     gap: 2rem;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
 }
 
 .summaryIcon {
     width: 80px;
     height: 80px;
-    background: rgba(255, 255, 255, 0.2);
+    background: #fff1f2;
     border-radius: 1rem;
     display: flex;
     align-items: center;
@@ -132,7 +134,7 @@
 .summaryIcon svg {
     width: 48px;
     height: 48px;
-    color: white;
+    color: #dc2626;
 }
 
 .summaryContent {
@@ -140,7 +142,7 @@
 }
 
 .summaryLabel {
-    color: rgba(255, 255, 255, 0.9);
+    color: #6b7280;
     font-size: 0.875rem;
     font-weight: 500;
     margin: 0 0 0.5rem 0;
@@ -149,14 +151,14 @@
 }
 
 .summaryValue {
-    color: white;
+    color: #111827;
     font-size: 2.5rem;
     font-weight: 700;
     margin: 0 0 0.5rem 0;
 }
 
 .summaryMeta {
-    color: rgba(255, 255, 255, 0.8);
+    color: #6b7280;
     font-size: 0.875rem;
     margin: 0;
 }
@@ -189,8 +191,8 @@
 }
 
 .orderCard:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    border-color: #dc2626;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
 }
 
 .orderHeader {
@@ -217,7 +219,7 @@
 .orderTotal {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #667eea;
+    color: #dc2626;
 }
 
 .orderItems {
@@ -266,7 +268,7 @@
 
 .viewDetailButton {
     padding: 0.5rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
     color: white;
     text-decoration: none;
     border-radius: 0.5rem;
@@ -277,7 +279,7 @@
 
 .viewDetailButton:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
 .emptyState {
@@ -294,7 +296,7 @@
 .shopButton {
     display: inline-block;
     padding: 0.75rem 2rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
     color: white;
     text-decoration: none;
     border-radius: 0.5rem;
@@ -304,7 +306,7 @@
 
 .shopButton:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
 }
 
 .loadingContainer {

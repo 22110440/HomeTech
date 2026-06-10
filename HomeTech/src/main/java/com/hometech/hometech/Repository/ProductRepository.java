@@ -2,9 +2,11 @@ package com.hometech.hometech.Repository;
 
 import com.hometech.hometech.model.Category;
 import com.hometech.hometech.model.Product;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Repository;
 
@@ -48,4 +50,28 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     // Sắp xếp theo ngày tạo (createdAt)
     List<Product> findAllByOrderByCreatedAtDesc(); // mới nhất
-}
+
+    @Query("""
+            select distinct p
+            from Product p
+            left join p.category c
+            left join p.variants v
+            left join p.attributeValues av
+            where p.hidden = false
+	              and (:keyword is null
+	                   or lower(p.name) like lower(concat('%', :keyword, '%'))
+	                   or lower(coalesce(p.description, '')) like lower(concat('%', :keyword, '%'))
+	                   or lower(coalesce(c.name, '')) like lower(concat('%', :keyword, '%'))
+	                   or lower(coalesce(v.name, '')) like lower(concat('%', :keyword, '%'))
+	                   or lower(coalesce(av.value, '')) like lower(concat('%', :keyword, '%')))
+	              and (:minPrice is null or p.price >= :minPrice)
+	              and (:maxPrice is null or p.price <= :maxPrice)
+	              and (:inStockOnly = false or p.stock > 0)
+	            order by p.soldCount desc, p.price desc
+	            """)
+	    List<Product> searchActiveForChatbot(@Param("keyword") String keyword,
+	                                         @Param("minPrice") Double minPrice,
+	                                         @Param("maxPrice") Double maxPrice,
+	                                         @Param("inStockOnly") boolean inStockOnly,
+	                                         Pageable pageable);
+	}

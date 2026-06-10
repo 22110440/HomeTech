@@ -31,10 +31,12 @@ function UsersManagement({ onOpenChat }) {
 
   useEffect(() => {
     loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     filterUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, searchTerm]);
 
   const isUserEnabled = (user) => user?.account?.enabled !== false;

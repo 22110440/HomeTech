@@ -4,6 +4,7 @@ import com.hometech.hometech.service.CustomUserDetailsService;
 import com.hometech.hometech.service.JwtAuthenticationFilter;
 import com.hometech.hometech.service.OAuth2UserService;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -19,12 +20,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 @Configuration
@@ -35,15 +37,18 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2UserService oAuth2UserService;
     private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final String frontendBaseUrl;
 
     public SecurityConfig(CustomUserDetailsService userDetailsService,
                           JwtAuthenticationFilter jwtAuthenticationFilter,
                           OAuth2UserService oAuth2UserService,
-                          OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) {
+                          OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler,
+                          @Value("${frontend.base-url:http://localhost:5173}") String frontendBaseUrl) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.oAuth2UserService = oAuth2UserService;
         this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
+        this.frontendBaseUrl = normalizeOrigin(frontendBaseUrl);
     }
 
     // ---------------- PASSWORD ENCODER ----------------
@@ -212,6 +217,8 @@ public class SecurityConfig {
                                 "/", "/home",
                                 "/auth/**",
                                 "/oauth2/**",
+                                "/login/oauth2/**",
+                                "/error",
                                 "/payment/**",
                                 "/admin/login", "/admin/register",
                                 "/repair-packages/**", "/repair-booking", "/my-repair-schedules", "/repair-payment", "/trade-in",
@@ -230,7 +237,9 @@ public class SecurityConfig {
                         .loginPage("/auth/login")
                         .loginProcessingUrl("/login")
                         .defaultSuccessUrl("/", true)
-                        .failureUrl("/auth/login?error=true")
+                        .failureHandler((request, response, exception) -> {
+                            response.sendRedirect(frontendUrl("/login?error=" + encode("Sai tên đăng nhập hoặc mật khẩu.")));
+                        })
                         .permitAll()
                 )
                 .oauth2Login(oauth2 -> oauth2
@@ -240,10 +249,15 @@ public class SecurityConfig {
                         )
                         .userInfoEndpoint(user -> user.userService(oAuth2UserService))
                         .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            response.sendRedirect(frontendUrl("/login?error=" + encode("Đăng nhập Google thất bại. Vui lòng thử lại.")));
+                        })
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessUrl("/auth/login?logout=true")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.sendRedirect(frontendUrl("/login?logout=true"));
+                        })
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
                         .permitAll()
@@ -259,13 +273,31 @@ public class SecurityConfig {
                                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                                 response.getOutputStream().println("{ \"error\": \"Unauthorized\" }");
                             } else {
-                                // For web requests, redirect to login page
-                                new LoginUrlAuthenticationEntryPoint("/auth/login").commence(request, response, authException);
+                                // For web requests, redirect to the React login page instead of a backend view.
+                                response.sendRedirect(frontendUrl("/login"));
                             }
                         })
                 )
                 .authenticationProvider(authenticationProvider());
 
         return http.build();
+    }
+
+    private String frontendUrl(String path) {
+        if (path == null || path.isBlank()) {
+            return frontendBaseUrl;
+        }
+        return frontendBaseUrl + (path.startsWith("/") ? path : "/" + path);
+    }
+
+    private String normalizeOrigin(String origin) {
+        if (origin == null || origin.isBlank()) {
+            return "http://localhost:5173";
+        }
+        return origin.replaceAll("/+$", "");
+    }
+
+    private String encode(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

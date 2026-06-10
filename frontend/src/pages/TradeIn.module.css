@@ -19,14 +19,6 @@
   max-width: 1320px;
 }
 
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 12px;
-  color: #9b5d21;
-  font-weight: 700;
-}
-
 .hero h1 {
   margin: 8px 0 12px;
   font-size: clamp(32px, 5vw, 54px);
@@ -156,19 +148,53 @@
 
 .issueGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 12px;
-  margin-top: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
 }
 
 .toggle {
-  display: flex;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  background: #f7fbf8;
+  gap: 14px;
+  background: #f8fcf9;
   border: 1px solid #dce7df;
-  border-radius: 18px;
-  padding: 14px;
+  border-radius: 20px;
+  padding: 16px 18px;
+  color: #21344f;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.toggle:hover {
+  transform: translateY(-1px);
+  border-color: #b7d5c3;
+  background: #f3fbf6;
+  box-shadow: 0 12px 28px rgba(31, 111, 120, 0.08);
+}
+
+.toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #1f6f78;
+  justify-self: center;
+}
+
+.toggle span {
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.toggle:has(input:checked) {
+  border-color: #1f6f78;
+  background: #eef8f5;
+  box-shadow: 0 12px 30px rgba(31, 111, 120, 0.12);
 }
 
 .actions {
@@ -182,6 +208,55 @@
   padding: 14px 20px;
   background: #d97829;
   color: #fff;
+}
+
+.appointmentSubmitBlock {
+  display: grid;
+  gap: 14px;
+  margin-top: 4px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid #dce7df;
+  background: linear-gradient(135deg, #f8fcf9 0%, #fffaf0 100%);
+}
+
+.appointmentSubmitBlock .muted {
+  margin: 0;
+  color: #5f6e74;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.appointmentSubmitButton {
+  min-height: 54px;
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #1f6f78 0%, #2f9b85 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 16px 34px rgba(31, 111, 120, 0.22);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.appointmentSubmitButton:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+  box-shadow: 0 20px 42px rgba(31, 111, 120, 0.28);
+}
+
+.appointmentSubmitButton:active {
+  transform: translateY(0);
+}
+
+.appointmentSubmitButton:disabled {
+  cursor: wait;
+  opacity: 0.78;
+  transform: none;
+  box-shadow: none;
 }
 
 .secondaryButton {
@@ -515,6 +590,14 @@
   .roleSwitch,
   .actions {
     width: 100%;
+  }
+
+  .issueGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .toggle {
+    min-height: 62px;
   }
 
   .roleSwitch button,

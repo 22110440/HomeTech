@@ -173,16 +173,57 @@ public class ProductRestController {
             }
         }
 
-        // Xử lý variants: xóa tất cả cũ, rồi thêm mới (vì orphanRemoval=true)
+        // Xử lý variants: giữ lại ID cũ để ảnh theo biến thể không bị mất liên kết.
         if (existing.getVariants() == null) {
             existing.setVariants(new ArrayList<>());
-        } else {
-            existing.getVariants().clear();
         }
+
+        Map<Long, ProductVariant> currentVariantsById = new HashMap<>();
+        for (ProductVariant currentVariant : existing.getVariants()) {
+            if (currentVariant.getId() != null) {
+                currentVariantsById.put(currentVariant.getId(), currentVariant);
+            }
+        }
+
+        Set<Long> requestedExistingVariantIds = new HashSet<>();
+        if (product.getVariants() != null) {
+            for (ProductVariant requestedVariant : product.getVariants()) {
+                if (requestedVariant.getId() != null) {
+                    if (!currentVariantsById.containsKey(requestedVariant.getId())) {
+                        return buildResponse(false, "Biến thể không thuộc sản phẩm", null, "Invalid variant", HttpStatus.BAD_REQUEST);
+                    }
+                    requestedExistingVariantIds.add(requestedVariant.getId());
+                }
+            }
+        }
+
+        Iterator<ProductVariant> variantIterator = existing.getVariants().iterator();
+        while (variantIterator.hasNext()) {
+            ProductVariant currentVariant = variantIterator.next();
+            if (currentVariant.getId() != null && !requestedExistingVariantIds.contains(currentVariant.getId())) {
+                productImageService.detachImagesFromVariant(currentVariant.getId());
+                variantIterator.remove();
+            }
+        }
+
         if (product.getVariants() != null && !product.getVariants().isEmpty()) {
-            for (ProductVariant variant : product.getVariants()) {
-                variant.setProduct(existing);
-                existing.getVariants().add(variant);
+            for (ProductVariant requestedVariant : product.getVariants()) {
+                String variantName = requestedVariant.getName() != null ? requestedVariant.getName().trim() : "";
+                if (variantName.isEmpty()) {
+                    continue;
+                }
+
+                ProductVariant targetVariant;
+                if (requestedVariant.getId() != null) {
+                    targetVariant = currentVariantsById.get(requestedVariant.getId());
+                } else {
+                    targetVariant = new ProductVariant();
+                    targetVariant.setProduct(existing);
+                    existing.getVariants().add(targetVariant);
+                }
+
+                targetVariant.setName(variantName);
+                targetVariant.setStock(requestedVariant.getStock());
             }
         }
 
@@ -281,17 +322,17 @@ public class ProductRestController {
     @PostMapping("/{productId}/images")
     public ResponseEntity<Map<String, Object>> uploadImages(
             @PathVariable Long productId,
+            @RequestParam(value = "variantId", required = false) Long variantId,
             @RequestParam("files") MultipartFile[] files)
     {
         try {
-            List<ProductImage> images = productImageService.uploadImages(productId, files);
+            List<ProductImage> images = productImageService.uploadImages(productId, variantId, files);
 
-            // Chỉ lấy tên ảnh
-            List<String> fileNames = images.stream()
-                    .map(ProductImage::getFileName)
+            List<ProductImageDTO> imageDTOs = images.stream()
+                    .map(ProductImageDTO::new)
                     .toList();
 
-            return buildResponse(true, "Upload ảnh thành công", fileNames, null, HttpStatus.OK);
+            return buildResponse(true, "Upload ảnh thành công", imageDTOs, null, HttpStatus.OK);
 
         } catch (Exception e) {
             return buildResponse(false, "Lỗi upload ảnh", null, e.getMessage(), HttpStatus.BAD_REQUEST);

@@ -31,12 +31,14 @@ function ExpenseManagement() {
 
     useEffect(() => {
         loadUserInfo();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         if (userInfo?.id && startDate && endDate) {
             loadExpenses();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userInfo, startDate, endDate, groupBy]);
 
     const loadUserInfo = async () => {
@@ -115,17 +117,6 @@ function ExpenseManagement() {
 
     return (
         <div className={styles.container}>
-            <header className={styles.header}>
-                <div className={styles.headerContent}>
-                    <Link to="/" className={styles.logo}>
-                        <span className={styles.logoText}>HomeTech</span>
-                    </Link>
-                    <Link to="/" className={styles.backButton}>
-                        ← Về trang chủ
-                    </Link>
-                </div>
-            </header>
-
             <div className={styles.content}>
                 <div className={styles.titleRow}>
                     <h1 className={styles.title}>Quản lý Chi tiêu</h1>

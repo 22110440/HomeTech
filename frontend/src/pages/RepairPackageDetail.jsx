@@ -63,7 +63,13 @@ export default function RepairPackageDetail() {
       <div className={styles.header}>
         <h1>{detail.serviceName}</h1>
       </div>
-      {detail.imageUrl && <img src={detail.imageUrl} alt={detail.serviceName} className={styles.packageImage} />}
+      {(detail.imageFileName || detail.imageUrl) && (
+        <img
+          src={detail.imageFileName ? `/api/repair-packages/${detail.id}/image` : detail.imageUrl}
+          alt={detail.serviceName}
+          className={styles.packageImage}
+        />
+      )}
       <p><strong>Loại máy:</strong> {detail.phoneType}</p>
       <p><strong>Danh mục dịch vụ:</strong> {detail.serviceCategory}</p>
       <p><strong>Giá:</strong> {Number(detail.price || 0).toLocaleString('vi-VN')} đ</p>

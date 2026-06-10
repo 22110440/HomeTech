@@ -1,6 +1,7 @@
 package com.hometech.hometech.service;
 
 import com.hometech.hometech.Repository.CartItemRepository;
+import com.hometech.hometech.Repository.CartRepository;
 import com.hometech.hometech.Repository.CustomerRepository;
 import com.hometech.hometech.Repository.ProductRepository;
 import com.hometech.hometech.Repository.ProductVariantRepository;
@@ -22,17 +23,20 @@ import java.util.Optional;
 public class CartService {
 
     private final CartItemRepository cartRepo;
+    private final CartRepository cartRepository;
     private final ProductRepository productRepo;
     private final CustomerRepository customerRepo;
     private final NotifyService notifyService;
     private final ProductVariantRepository productVariantRepository;
 
     public CartService(CartItemRepository cartRepo,
+                       CartRepository cartRepository,
                        ProductRepository productRepo,
                        CustomerRepository customerRepo,
                        NotifyService notifyService,
                        ProductVariantRepository productVariantRepository) {
         this.cartRepo = cartRepo;
+        this.cartRepository = cartRepository;
         this.productRepo = productRepo;
         this.customerRepo = customerRepo;
         this.notifyService = notifyService;
@@ -49,15 +53,16 @@ public class CartService {
         throw new RuntimeException("Customer not found for userId=" + userId);
     }
 
-    // ===== Utility: đảm bảo customer có cart, tạo nếu chưa có =====
-    private void ensureCustomerHasCart(Customer customer) {
-        if (customer.getCart() == null) {
-            Cart newCart = new Cart();
-            newCart.setCustomer(customer);
-            customer.setCart(newCart);
-            // lưu customer để cascade tạo cart (cần đảm bảo Customer entity cascade ALL cho Cart)
-            customerRepo.save(customer);
-        }
+    // ===== Utility: đảm bảo customer có cart đã được persist =====
+    private Cart getOrCreateCart(Customer customer) {
+        return cartRepository.findByCustomerId(customer.getId())
+                .orElseGet(() -> {
+                    Cart newCart = new Cart();
+                    newCart.setCustomer(customer);
+                    Cart savedCart = cartRepository.saveAndFlush(newCart);
+                    customer.setCart(savedCart);
+                    return savedCart;
+                });
     }
 
     // Xóa các item không hợp lệ (sản phẩm ẩn/hết hàng hoặc số lượng <= 0)
@@ -114,18 +119,23 @@ public class CartService {
     // Lấy giỏ hàng theo user (login)
     public List<CartItem> getCartItemsByUserId(Long userId) {
         Customer customer = getCustomerByUserIdOrThrow(userId);
-        if (customer.getCart() == null) return List.of();
+        Cart cart = cartRepository.findByCustomerId(customer.getId()).orElse(null);
+        if (cart == null) return List.of();
         // findByCart with @EntityGraph will eagerly load product
-        return cleanupCartItems(customer.getCart());
+        return cleanupCartItems(cart);
     }
 
 
     // Thêm sản phẩm vào giỏ của user
     public CartItem addProduct(long userId, long productId, int quantity, Long variantId) {
         Customer customer = getCustomerByUserIdOrThrow(userId);
+        if (quantity <= 0) {
+            throw new RuntimeException("Số lượng phải lớn hơn 0");
+        }
 
         Product product = productRepo.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with id=" + productId));
+        validateProductAvailability(product);
 
         ProductVariant variant = null;
         if (variantId != null) {
@@ -143,17 +153,15 @@ public class CartService {
                 throw new RuntimeException("Số lượng vượt quá tồn kho của biến thể");
             }
         } else {
-            validateProductAvailability(product);
             if (quantity > product.getStock()) {
                 throw new RuntimeException("Số lượng vượt quá tồn kho");
             }
         }
 
-        // ensure cart exists
-        ensureCustomerHasCart(customer);
+        Cart cart = getOrCreateCart(customer);
 
         // tìm item có cùng product id và variant id trong cùng cart
-        List<CartItem> existingItems = cartRepo.findByCart(customer.getCart());
+        List<CartItem> existingItems = cartRepo.findByCart(cart);
         final ProductVariant finalVariant = variant;
         Optional<CartItem> existingItem = existingItems.stream()
                 .filter(item -> {
@@ -188,7 +196,7 @@ public class CartService {
             CartItem newItem = new CartItem();
             newItem.setProduct(product);
             newItem.setVariant(finalVariant);
-            newItem.setCart(customer.getCart());
+            newItem.setCart(cart);
             newItem.setQuantity(quantity);
             savedItem = cartRepo.save(newItem);
         }
@@ -212,9 +220,10 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Cart item not found with id=" + itemId));
 
         Customer customer = getCustomerByUserIdOrThrow(userId);
+        Cart cart = cartRepository.findByCustomerId(customer.getId()).orElse(null);
 
-        if (item.getCart() == null || customer.getCart() == null ||
-                !Objects.equals(item.getCart().getId(), customer.getCart().getId())) {
+        if (item.getCart() == null || cart == null ||
+                !Objects.equals(item.getCart().getId(), cart.getId())) {
             throw new RuntimeException("Unauthorized: cart item does not belong to this user");
         }
 
@@ -224,7 +233,18 @@ public class CartService {
         }
 
         validateProductAvailability(product);
-        int newQuantity = ensureQuantityWithinStock(item.getQuantity() + 1, product);
+        int newQuantity = item.getQuantity() + 1;
+        ProductVariant variant = item.getVariant();
+        if (variant != null) {
+            if (variant.getStock() <= 0) {
+                throw new RuntimeException("Biến thể đã hết hàng");
+            }
+            if (newQuantity > variant.getStock()) {
+                throw new RuntimeException("Số lượng vượt quá tồn kho của biến thể");
+            }
+        } else {
+            newQuantity = ensureQuantityWithinStock(newQuantity, product);
+        }
         item.setQuantity(newQuantity);
         return cartRepo.save(item);
     }
@@ -235,9 +255,10 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Cart item not found with id=" + itemId));
 
         Customer customer = getCustomerByUserIdOrThrow(userId);
+        Cart cart = cartRepository.findByCustomerId(customer.getId()).orElse(null);
 
-        if (item.getCart() == null || customer.getCart() == null ||
-                !Objects.equals(item.getCart().getId(), customer.getCart().getId())) {
+        if (item.getCart() == null || cart == null ||
+                !Objects.equals(item.getCart().getId(), cart.getId())) {
             throw new RuntimeException("Unauthorized: cart item does not belong to this user");
         }
 
@@ -263,9 +284,10 @@ public class CartService {
 
         Customer customer = customerRepo.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Customer not found for userId=" + userId));
+        Cart cart = cartRepository.findByCustomerId(customer.getId()).orElse(null);
 
-        if (item.getCart() == null || customer.getCart() == null ||
-                !Objects.equals(item.getCart().getId(), customer.getCart().getId())) {
+        if (item.getCart() == null || cart == null ||
+                !Objects.equals(item.getCart().getId(), cart.getId())) {
             throw new RuntimeException("Unauthorized: cart item does not belong to this user");
         }
 

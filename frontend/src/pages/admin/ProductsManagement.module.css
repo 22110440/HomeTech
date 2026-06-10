@@ -222,6 +222,25 @@
   color: #374151;
 }
 
+.table th:nth-child(6),
+.table td:nth-child(6) {
+  min-width: 132px;
+  white-space: nowrap;
+}
+
+.table th:nth-child(7),
+.table td:nth-child(7) {
+  min-width: 116px;
+}
+
+.visibilityBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  line-height: 1;
+}
+
 .categoryName {
   font-weight: 600;
   color: #1f2937;
@@ -444,6 +463,18 @@
   word-break: break-word;
 }
 
+.imageScopeTag {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0.15rem auto 0;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 .displayOrderControl {
   display: flex;
   align-items: center;
@@ -557,7 +588,8 @@
 
 .variantRow {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 0.75rem;
   padding: 1rem;
   background: #f9fafb;
@@ -569,6 +601,12 @@
 .variantRow:hover {
   border-color: #c7d2fe;
   background: #f3f4f6;
+}
+
+.variantRowMain {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .variantInputs {
@@ -627,6 +665,85 @@
 .variantDeleteButton svg {
   width: 18px;
   height: 18px;
+}
+
+.variantMedia {
+  padding: 0.9rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: white;
+}
+
+.variantMediaHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.variantMediaHeader small {
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.variantUploadBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0.75rem 1rem;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 0.65rem;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.variantUploadBox:hover {
+  border-color: #dc2626;
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.variantUploadBox input {
+  display: none;
+}
+
+.variantImageGrid {
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+}
+
+.variantSavedImages {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+
+.variantSavedImage {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  flex: 0 0 74px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.variantSavedImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .addVariantButton {
@@ -729,6 +846,11 @@
     margin: 1rem;
   }
 
+  .variantRowMain {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .variantInputs {
     flex-direction: column;
   }
@@ -741,4 +863,3 @@
     grid-template-columns: 1fr;
   }
 }
-

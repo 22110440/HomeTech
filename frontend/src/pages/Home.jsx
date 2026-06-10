@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { userAPI, authAPI } from '../services/api';
 import api from '../services/api';
+import AnnouncementBar from '../components/AnnouncementBar';
 import styles from './Home.module.css';
+
+const PRODUCTS_LOAD_STEP = 20;
 
 function Home() {
   const navigate = useNavigate();
@@ -25,10 +28,11 @@ function Home() {
   const [sliderItems, setSliderItems] = useState([]);
   const [footerContent, setFooterContent] = useState(null);
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
-  const sliderTrackRef = useRef(null);
+  const [visibleProductCount, setVisibleProductCount] = useState(PRODUCTS_LOAD_STEP);
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -78,7 +82,12 @@ function Home() {
         setIsSearching(false);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchKeyword]);
+
+  useEffect(() => {
+    setVisibleProductCount(PRODUCTS_LOAD_STEP);
+  }, [searchKeyword, selectedCategoryId, sortOption, products.length]);
 
   const loadData = async () => {
     try {
@@ -214,37 +223,33 @@ function Home() {
     }
   };
 
-  const renderBannerAction = (item, className) => {
-    if (!item?.redirectUrl) return null;
-    const label = item.buttonText?.trim() || 'Khám phá ngay';
-    if (item.redirectUrl.startsWith('/')) {
+  const renderFixedSideAd = (item, side) => {
+    if (!item?.imageUrl) return null;
+    const className = `${styles.fixedSideAd} ${side === 'left' ? styles.fixedSideAdLeft : styles.fixedSideAdRight}`;
+    const image = <img src={item.imageUrl} alt="HomeTech promotion" />;
+    const redirectUrl = item.redirectUrl || '';
+
+    if (redirectUrl.startsWith('/')) {
       return (
-        <Link to={item.redirectUrl} className={className}>
-          {label}
+        <Link key={item.id || side} to={redirectUrl} className={className}>
+          {image}
         </Link>
       );
     }
+
+    if (redirectUrl) {
+      return (
+        <a key={item.id || side} href={redirectUrl} target="_blank" rel="noopener noreferrer" className={className}>
+          {image}
+        </a>
+      );
+    }
+
     return (
-      <a href={item.redirectUrl} target="_blank" rel="noopener noreferrer" className={className}>
-        {label}
-      </a>
+      <div key={item.id || side} className={className}>
+        {image}
+      </div>
     );
-  };
-
-  const handleHeroNavigation = (direction) => {
-    if (!heroBanners.length) return;
-    setActiveBannerIndex((prev) => {
-      if (direction === 'next') {
-        return (prev + 1) % heroBanners.length;
-      }
-      return (prev - 1 + heroBanners.length) % heroBanners.length;
-    });
-  };
-
-  const scrollSlider = (direction) => {
-    if (!sliderTrackRef.current) return;
-    const distance = direction === 'next' ? 320 : -320;
-    sliderTrackRef.current.scrollBy({ left: distance, behavior: 'smooth' });
   };
 
   const performSearch = async (keyword) => {
@@ -311,22 +316,26 @@ function Home() {
     try {
       let sortedData = [];
       switch (option) {
-        case 'priceAsc':
+        case 'priceAsc': {
           const priceAscRes = await userAPI.sortProductsByPriceAsc();
           sortedData = priceAscRes.data || [];
           break;
-        case 'priceDesc':
+        }
+        case 'priceDesc': {
           const priceDescRes = await userAPI.sortProductsByPriceDesc();
           sortedData = priceDescRes.data || [];
           break;
-        case 'soldAsc':
+        }
+        case 'soldAsc': {
           const soldAscRes = await userAPI.sortProductsBySoldAsc();
           sortedData = soldAscRes.data || [];
           break;
-        case 'soldDesc':
+        }
+        case 'soldDesc': {
           const soldDescRes = await userAPI.sortProductsBySoldDesc();
           sortedData = soldDescRes.data || [];
           break;
+        }
         default:
           sortedData = allProducts;
       }
@@ -372,6 +381,15 @@ function Home() {
   };
 
   const filteredProducts = getFilteredProducts();
+  const visibleProducts = filteredProducts.slice(0, visibleProductCount);
+  const visibleProductsEnd = Math.min(visibleProductCount, filteredProducts.length);
+  const hasMoreProducts = visibleProductCount < filteredProducts.length;
+
+  const handleLoadMoreProducts = () => {
+    setVisibleProductCount((currentCount) => (
+      Math.min(currentCount + PRODUCTS_LOAD_STEP, filteredProducts.length)
+    ));
+  };
 
   const loadCartCount = async (userId) => {
     try {
@@ -406,10 +424,13 @@ function Home() {
     );
   }
 
+  const fixedSideSliderItems = sliderItems.slice(0, 2);
+
   return (
     <div className={styles.container}>
       {/* Header */}
       <header className={styles.header}>
+        <AnnouncementBar />
         <div className={styles.headerContent}>
           <Link to="/" className={styles.logo}>
             <span className={styles.logoText}>HomeTech</span>
@@ -467,6 +488,21 @@ function Home() {
               </div>
             )}
           </div>
+
+          <nav className={styles.headerQuickLinks} aria-label="Dịch vụ chính">
+            <Link to="/repair-packages" className={`${styles.headerQuickLink} ${styles.repairQuickLink}`}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-3-3 2.6-2.6Z" />
+              </svg>
+              <span>Sửa chữa</span>
+            </Link>
+            <Link to="/trade-in" className={`${styles.headerQuickLink} ${styles.tradeInQuickLink}`}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h11m0 0-3-3m3 3-3 3M16 17H5m0 0 3 3m-3-3 3-3" />
+              </svg>
+              <span>Thu cũ đổi mới</span>
+            </Link>
+          </nav>
 
           {/* Category Dropdown Button */}
           <div className={styles.categoryDropdownContainer}>
@@ -652,13 +688,6 @@ function Home() {
       {!searchKeyword.trim() && (
         heroBanners.length > 0 ? (
           <section className={styles.heroCarousel}>
-            <button
-              className={`${styles.heroNav} ${styles.heroNavPrev}`}
-              onClick={() => handleHeroNavigation('prev')}
-              aria-label="Banner trước"
-            >
-              ‹
-            </button>
             <div
               className={styles.heroSlides}
               style={{ transform: `translateX(-${activeBannerIndex * 100}%)` }}
@@ -668,24 +697,9 @@ function Home() {
                   key={banner.id || index}
                   className={`${styles.heroSlide} ${index === activeBannerIndex ? styles.heroSlideActive : ''}`}
                   style={{ backgroundImage: `url(${banner.imageUrl})` }}
-                >
-                  <div className={styles.heroOverlay}>
-                    {banner.subtitle && <p className={styles.heroSubtitle}>{banner.subtitle}</p>}
-                    <h1 className={styles.heroTitle}>{banner.title}</h1>
-                    <div className={styles.heroActions}>
-                      {renderBannerAction(banner, styles.heroButton)}
-                    </div>
-                  </div>
-                </div>
+                />
               ))}
             </div>
-            <button
-              className={`${styles.heroNav} ${styles.heroNavNext}`}
-              onClick={() => handleHeroNavigation('next')}
-              aria-label="Banner tiếp theo"
-            >
-              ›
-            </button>
             <div className={styles.heroDots}>
               {heroBanners.map((banner, index) => (
                 <button
@@ -707,33 +721,12 @@ function Home() {
         )
       )}
 
-      {/* Slider Section */}
-      {!searchKeyword.trim() && sliderItems.length > 0 && (
-        <section className={styles.sliderSection}>
-          <div className={styles.sliderHeader}>
-            <h2 className={styles.sectionTitle}>Ưu đãi & Slider</h2>
-            <div className={styles.sliderControls}>
-              <button className={styles.sliderButton} onClick={() => scrollSlider('prev')} aria-label="Slider trước">
-                ‹
-              </button>
-              <button className={styles.sliderButton} onClick={() => scrollSlider('next')} aria-label="Slider tiếp theo">
-                ›
-              </button>
-            </div>
-          </div>
-          <div className={styles.sliderTrack} ref={sliderTrackRef}>
-            {sliderItems.map((item) => (
-              <div key={item.id} className={styles.sliderCard}>
-                <div className={styles.sliderImage} style={{ backgroundImage: `url(${item.imageUrl})` }} />
-                <div className={styles.sliderBody}>
-                  <h3 className={styles.sliderTitle}>{item.title}</h3>
-                  {item.subtitle && <p className={styles.sliderDescription}>{item.subtitle}</p>}
-                  {renderBannerAction(item, styles.sliderLink)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+      {/* Fixed Side Slider Images */}
+      {!searchKeyword.trim() && fixedSideSliderItems.length > 0 && (
+        <div className={styles.fixedSideAds} aria-label="Ảnh khuyến mãi cố định hai bên">
+          {renderFixedSideAd(fixedSideSliderItems[0], 'left')}
+          {renderFixedSideAd(fixedSideSliderItems[1], 'right')}
+        </div>
       )}
 
       {/* Top Selling Products */}
@@ -742,8 +735,8 @@ function Home() {
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>Sản phẩm bán chạy</h2>
           </div>
-          <div className={styles.productsGrid}>
-            {topSelling.slice(0, 8).map((product) => (
+          <div className={`${styles.productsGrid} ${styles.fiveColumnProductsGrid}`}>
+            {topSelling.slice(0, 10).map((product) => (
               <Link
                 key={product.id}
                 to={`/product/${product.id}`}
@@ -805,80 +798,99 @@ function Home() {
       {/* All Products */}
       <section className={styles.section}>
         <div className={styles.sectionHeader}>
-          <h2 className={styles.sectionTitle}>
-            {searchKeyword.trim()
-              ? `Kết quả tìm kiếm: "${searchKeyword}"`
-              : selectedCategoryId
-                ? `${categories.find(c => c.id === selectedCategoryId)?.name || 'Danh mục'}`
-                : sortOption !== 'default'
-                  ? `Tất cả sản phẩm`
-                  : 'Tất cả sản phẩm'}
-          </h2>
-          {searchKeyword.trim() && (
-            <p className={styles.searchResultCount}>
-              Tìm thấy {filteredProducts.length} sản phẩm
+          <div>
+            <h2 className={styles.sectionTitle}>
+              {searchKeyword.trim()
+                ? `Kết quả tìm kiếm: "${searchKeyword}"`
+                : selectedCategoryId
+                  ? `${categories.find(c => c.id === selectedCategoryId)?.name || 'Danh mục'}`
+                  : sortOption !== 'default'
+                    ? `Tất cả sản phẩm`
+                    : 'Tất cả sản phẩm'}
+            </h2>
+            <p className={styles.loadMoreSummary}>
+              {filteredProducts.length > 0
+                ? `Đang hiển thị ${visibleProductsEnd}/${filteredProducts.length} sản phẩm`
+                : 'Không có sản phẩm phù hợp'}
             </p>
-          )}
+          </div>
         </div>
         {filteredProducts.length === 0 ? (
           <div className={styles.emptyState}>
             <p>Không tìm thấy sản phẩm nào</p>
           </div>
         ) : (
-          <div className={styles.productsGrid}>
-            {filteredProducts.map((product) => (
-              <Link
-                key={product.id}
-                to={`/product/${product.id}`}
-                className={styles.productCard}
-              >
-                <div className={styles.productImageContainer}>
-                  {productImages[product.id] ? (
-                    <>
-                      <img
-                        key={`img-all-${product.id}-${productImages[product.id]?.substring(0, 20)}`}
-                        src={productImages[product.id]}
-                        alt={product.name}
-                        className={styles.productImage}
-                        onError={(e) => {
-                          console.error(`[IMG ERROR] Product ${product.id}:`, {
-                            src: productImages[product.id]?.substring(0, 100),
-                            error: e
-                          });
-                          e.target.style.display = 'none';
-                          const placeholder = e.target.nextElementSibling;
-                          if (placeholder) {
-                            placeholder.style.display = 'flex';
-                          }
-                        }}
-                        onLoad={() => {
-                          console.log(`[IMG SUCCESS] Product ${product.id} - Image loaded`);
-                        }}
-                      />
-                      <div className={styles.productImagePlaceholder} style={{ display: 'none' }}>
+          <>
+            <div className={`${styles.productsGrid} ${styles.fiveColumnProductsGrid}`}>
+              {visibleProducts.map((product) => (
+                <Link
+                  key={product.id}
+                  to={`/product/${product.id}`}
+                  className={styles.productCard}
+                >
+                  <div className={styles.productImageContainer}>
+                    {productImages[product.id] ? (
+                      <>
+                        <img
+                          key={`img-all-${product.id}-${productImages[product.id]?.substring(0, 20)}`}
+                          src={productImages[product.id]}
+                          alt={product.name}
+                          className={styles.productImage}
+                          onError={(e) => {
+                            console.error(`[IMG ERROR] Product ${product.id}:`, {
+                              src: productImages[product.id]?.substring(0, 100),
+                              error: e
+                            });
+                            e.target.style.display = 'none';
+                            const placeholder = e.target.nextElementSibling;
+                            if (placeholder) {
+                              placeholder.style.display = 'flex';
+                            }
+                          }}
+                          onLoad={() => {
+                            console.log(`[IMG SUCCESS] Product ${product.id} - Image loaded`);
+                          }}
+                        />
+                        <div className={styles.productImagePlaceholder} style={{ display: 'none' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </>
+                    ) : (
+                      <div className={styles.productImagePlaceholder}>
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </div>
-                    </>
-                  ) : (
-                    <div className={styles.productImagePlaceholder}>
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className={styles.productInfo}>
-                  <h3 className={styles.productName}>{product.name}</h3>
-                  <div className={styles.productPrice}>{formatPrice(product.price)}</div>
-                  {product.soldCount > 0 && (
-                    <div className={styles.productSold}>Đã bán: {product.soldCount}</div>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
+                    )}
+                  </div>
+                  <div className={styles.productInfo}>
+                    <h3 className={styles.productName}>{product.name}</h3>
+                    <div className={styles.productPrice}>{formatPrice(product.price)}</div>
+                    {product.soldCount > 0 && (
+                      <div className={styles.productSold}>Đã bán: {product.soldCount}</div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {hasMoreProducts && (
+              <div className={styles.loadMoreContainer}>
+                <button
+                  type="button"
+                  className={styles.loadMoreButton}
+                  onClick={handleLoadMoreProducts}
+                >
+                  <span>Xem thêm</span>
+                  <svg className={styles.loadMoreIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </>
         )}
       </section>
       {footerContent && (

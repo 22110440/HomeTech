@@ -3,6 +3,8 @@ package com.hometech.hometech.Repository;
 import com.hometech.hometech.model.Cart;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CartRepository extends JpaRepository<Cart, Long> {
+import java.util.Optional;
 
+public interface CartRepository extends JpaRepository<Cart, Long> {
+    Optional<Cart> findByCustomerId(Long customerId);
 }

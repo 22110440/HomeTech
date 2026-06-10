@@ -70,6 +70,7 @@ const NotificationBell = ({ inline = false }) => {
     if (open) {
       fetchNotifications();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const fetchUnreadCount = async () => {
@@ -286,4 +287,3 @@ const NotificationBell = ({ inline = false }) => {
 };
 
 export default NotificationBell;
-

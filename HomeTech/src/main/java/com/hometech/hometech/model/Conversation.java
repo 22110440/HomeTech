@@ -34,6 +34,17 @@ public class Conversation {
     private LocalDateTime updatedAt;
     private LocalDateTime lastMessageAt;
 
+    @Column(name = "handoff_requested", nullable = false)
+    private boolean handoffRequested = false;
+
+    @Column(name = "handoff_reason", length = 1000)
+    private String handoffReason;
+
+    private LocalDateTime handoffRequestedAt;
+
+    @Column(name = "last_bot_intent", length = 80)
+    private String lastBotIntent;
+
     @PrePersist
     public void prePersist() {
         createdAt = LocalDateTime.now();
@@ -45,5 +56,4 @@ public class Conversation {
         updatedAt = LocalDateTime.now();
     }
 }
-
 

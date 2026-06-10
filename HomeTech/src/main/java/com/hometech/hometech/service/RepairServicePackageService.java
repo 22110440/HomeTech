@@ -4,7 +4,10 @@ import com.hometech.hometech.Repository.RepairServicePackageRepository;
 import com.hometech.hometech.dto.RepairServicePackageRequest;
 import com.hometech.hometech.model.RepairServicePackage;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -37,19 +40,27 @@ public class RepairServicePackageService {
     }
 
     public RepairServicePackage createPackage(RepairServicePackageRequest request) {
+        return createPackage(request, null);
+    }
+
+    public RepairServicePackage createPackage(RepairServicePackageRequest request, MultipartFile imageFile) {
         validateRequest(request);
 
         RepairServicePackage repairServicePackage = new RepairServicePackage();
-        applyRequestToEntity(repairServicePackage, request);
+        applyRequestToEntity(repairServicePackage, request, imageFile);
 
         return repairServicePackageRepository.save(repairServicePackage);
     }
 
     public RepairServicePackage updatePackage(Long id, RepairServicePackageRequest request) {
+        return updatePackage(id, request, null);
+    }
+
+    public RepairServicePackage updatePackage(Long id, RepairServicePackageRequest request, MultipartFile imageFile) {
         validateRequest(request);
 
         RepairServicePackage existing = getPackageById(id);
-        applyRequestToEntity(existing, request);
+        applyRequestToEntity(existing, request, imageFile);
 
         return repairServicePackageRepository.save(existing);
     }
@@ -59,15 +70,31 @@ public class RepairServicePackageService {
         repairServicePackageRepository.delete(existing);
     }
 
-    private void applyRequestToEntity(RepairServicePackage entity, RepairServicePackageRequest request) {
+    private void applyRequestToEntity(RepairServicePackage entity, RepairServicePackageRequest request, MultipartFile imageFile) {
         entity.setPhoneType(request.getPhoneType().trim());
         entity.setServiceCategory(request.getServiceCategory().trim());
         entity.setServiceName(request.getServiceName().trim());
         entity.setDescription(request.getDescription() == null ? null : request.getDescription().trim());
-        entity.setImageUrl(request.getImageUrl() == null ? null : request.getImageUrl().trim());
         entity.setPrice(request.getPrice());
         entity.setEstimatedDurationMinutes(request.getEstimatedDurationMinutes());
         entity.setActive(request.getActive() == null ? true : request.getActive());
+
+        // Handle image file upload
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                entity.setImageData(imageFile.getBytes());
+                entity.setImageContentType(
+                        StringUtils.hasText(imageFile.getContentType()) ? imageFile.getContentType() : "image/jpeg"
+                );
+                entity.setImageFileName(imageFile.getOriginalFilename());
+                entity.setImageUrl(""); // clear URL when file is uploaded
+            } catch (IOException e) {
+                throw new RuntimeException("Không thể đọc file ảnh: " + e.getMessage());
+            }
+        } else if (request.getImageUrl() != null) {
+            // Only update imageUrl if no file uploaded and URL is provided
+            entity.setImageUrl(request.getImageUrl().trim());
+        }
     }
 
     private void validateRequest(RepairServicePackageRequest request) {
@@ -92,3 +119,4 @@ public class RepairServicePackageService {
         }
     }
 }
+

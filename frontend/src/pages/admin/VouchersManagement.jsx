@@ -20,7 +20,7 @@ const formatDateTime = (value) => {
   if (!value) return '-';
   try {
     return new Date(value).toLocaleString('vi-VN');
-  } catch (err) {
+  } catch {
     return value;
   }
 };
@@ -370,4 +370,3 @@ export default function VouchersManagement() {
     </div>
   );
 }
-

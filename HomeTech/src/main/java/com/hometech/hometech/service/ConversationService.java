@@ -17,12 +17,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 
 import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 
 @Service
 @Transactional
 public class ConversationService {
+
+    private static final Duration ADMIN_OVERRIDE_WINDOW = Duration.ofMinutes(30);
 
     private final ConversationRepository conversationRepository;
     private final ChatMessageRepository chatMessageRepository;
@@ -46,6 +49,12 @@ public class ConversationService {
                     c.setLastMessageAt(LocalDateTime.now());
                     return conversationRepository.save(c);
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public Conversation getConversationById(Long conversationId) {
+        return conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
     }
 
     @Transactional(readOnly = true)
@@ -98,25 +107,73 @@ public class ConversationService {
             }
         }
 
+        // Cập nhật lastMessageAt cho conversation
+        conversation.setLastMessageAt(LocalDateTime.now());
+        if (senderType == SenderType.ADMIN) {
+            conversation.setHandoffRequested(false);
+            conversation.setHandoffReason(null);
+            conversation.setHandoffRequestedAt(null);
+        }
+        conversationRepository.save(conversation);
+
         return chatMessageRepository.save(message);
     }
 
     @Transactional(readOnly = true)
     public List<Conversation> getAllConversations() {
-        return conversationRepository.findAll();
+        return conversationRepository.findAllByOrderByLastMessageAtDesc();
     }
 
     @Transactional
     public long getUnreadCountForCustomer(Customer customer) {
         Conversation c = getOrCreateConversation(customer);
-        return chatMessageRepository.countByConversationAndSenderTypeAndReadIsFalse(
-                c, SenderType.ADMIN);
+        long adminUnread = chatMessageRepository.countByConversationAndSenderTypeAndReadIsFalse(c, SenderType.ADMIN);
+        long botUnread = chatMessageRepository.countByConversationAndSenderTypeAndReadIsFalse(c, SenderType.BOT);
+        return adminUnread + botUnread;
     }
 
     @Transactional
     public void markMessagesAsReadForCustomer(Customer customer) {
         Conversation c = getOrCreateConversation(customer);
         chatMessageRepository.markAsReadForConversationAndSenderType(c, SenderType.ADMIN);
+        chatMessageRepository.markAsReadForConversationAndSenderType(c, SenderType.BOT);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasAdminParticipation(Long conversationId) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+        LocalDateTime threshold = LocalDateTime.now().minus(ADMIN_OVERRIDE_WINDOW);
+        return chatMessageRepository
+                .findTopByConversationAndSenderTypeOrderBySentAtDesc(conversation, SenderType.ADMIN)
+                .map(ChatMessage::getSentAt)
+                .map(sentAt -> sentAt != null && !sentAt.isBefore(threshold))
+                .orElse(false);
+    }
+
+    @Transactional(readOnly = true)
+    public long getUnreadCountForAdmin(Long conversationId) {
+        return chatMessageRepository.countByConversationIdAndSenderTypeAndReadIsFalse(
+                conversationId, SenderType.CUSTOMER);
+    }
+
+    @Transactional
+    public void markMessagesAsReadForAdmin(Long conversationId) {
+        chatMessageRepository.markAsReadByConversationIdAndSenderType(
+                conversationId, SenderType.CUSTOMER);
+    }
+
+    @Transactional
+    public void updateBotState(Long conversationId, String intent, boolean handoffRequested, String handoffReason) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy cuộc trò chuyện"));
+        conversation.setLastBotIntent(intent);
+        if (handoffRequested) {
+            conversation.setHandoffRequested(true);
+            conversation.setHandoffReason(handoffReason);
+            conversation.setHandoffRequestedAt(LocalDateTime.now());
+        }
+        conversationRepository.save(conversation);
     }
 
     @Transactional
@@ -138,5 +195,4 @@ public class ConversationService {
 }
 
 }
-
 

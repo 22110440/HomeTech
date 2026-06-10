@@ -11,6 +11,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -29,15 +30,18 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final CustomerRepository customerRepository;
     private final CustomUserDetailsService userDetailsService;
     private final JwtService jwtService;
+    private final String frontendBaseUrl;
 
     public OAuth2LoginSuccessHandler(AccountRepository accountRepository,
                                      CustomerRepository customerRepository,
                                      CustomUserDetailsService userDetailsService,
-                                     JwtService jwtService) {
+                                     JwtService jwtService,
+                                     @Value("${frontend.base-url:http://localhost:5173}") String frontendBaseUrl) {
         this.accountRepository = accountRepository;
         this.customerRepository = customerRepository;
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
+        this.frontendBaseUrl = normalizeOrigin(frontendBaseUrl);
     }
 
     @Override
@@ -113,7 +117,8 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
             // Redirect về frontend với token trong URL (sử dụng hash để bảo mật hơn)
             String frontendUrl = String.format(
-                "http://localhost:5173/oauth2/callback?token=%s&refreshToken=%s",
+                "%s/oauth2/callback?token=%s&refreshToken=%s",
+                frontendBaseUrl,
                 URLEncoder.encode(accessToken, StandardCharsets.UTF_8),
                 URLEncoder.encode(refreshToken, StandardCharsets.UTF_8)
             );
@@ -121,7 +126,14 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         } catch (Exception e) {
             System.err.println("❌ Lỗi khi tạo JWT token: " + e.getMessage());
             // Fallback: redirect về frontend không có token, frontend sẽ tự gọi API
-            response.sendRedirect("http://localhost:5173/oauth2/callback");
+            response.sendRedirect(frontendBaseUrl + "/oauth2/callback");
         }
+    }
+
+    private String normalizeOrigin(String origin) {
+        if (origin == null || origin.isBlank()) {
+            return "http://localhost:5173";
+        }
+        return origin.replaceAll("/+$", "");
     }
 }

@@ -23,6 +23,7 @@ function ReviewsManagement() {
 
   useEffect(() => {
     filterReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reviews, searchTerm, selectedRating]);
 
   const loadAdminInfo = () => {
@@ -68,7 +69,7 @@ function ReviewsManagement() {
               ...review,
               response: responseRes.data || null
             };
-          } catch (error) {
+          } catch {
             return {
               ...review,
               response: null
@@ -95,7 +96,7 @@ function ReviewsManagement() {
               };
             }
             return { productId: review.product.id, imageUrl: null };
-          } catch (error) {
+          } catch {
             return { productId: review.product.id, imageUrl: null };
           }
         });
@@ -408,4 +409,3 @@ function ReviewsManagement() {
 }
 
 export default ReviewsManagement;
-

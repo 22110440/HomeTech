@@ -7,7 +7,6 @@ const emptyForm = {
   serviceName: '',
   serviceCategory: '',
   description: '',
-  imageUrl: '',
   price: '',
   estimatedDurationMinutes: '',
   active: true
@@ -23,6 +22,8 @@ export default function RepairPackagesManagement() {
   const [form, setForm] = useState(emptyForm);
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -35,7 +36,7 @@ export default function RepairPackagesManagement() {
       setItems(response?.data || []);
       setPhoneCategories((phoneRes?.data || []).filter((item) => item.active));
       setServiceCategories((serviceRes?.data || []).filter((item) => item.active));
-    } catch (err) {
+    } catch {
       setError('Không thể tải danh sách gói sửa chữa');
     } finally {
       setLoading(false);
@@ -57,6 +58,8 @@ export default function RepairPackagesManagement() {
   const openCreate = () => {
     setEditingId(null);
     setForm(emptyForm);
+    setImageFile(null);
+    setImagePreview('');
     setShowModal(true);
   };
 
@@ -67,35 +70,55 @@ export default function RepairPackagesManagement() {
       serviceName: item.serviceName || '',
       serviceCategory: item.serviceCategory || '',
       description: item.description || '',
-      imageUrl: item.imageUrl || '',
       price: item.price ?? '',
       estimatedDurationMinutes: item.estimatedDurationMinutes ?? '',
       active: item.active ?? true
     });
+    setImageFile(null);
+    // Show existing image preview from server
+    if (item.imageFileName) {
+      setImagePreview(`/api/repair-packages/${item.id}/image`);
+    } else if (item.imageUrl) {
+      setImagePreview(item.imageUrl);
+    } else {
+      setImagePreview('');
+    }
     setShowModal(true);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = {
-        phoneType: form.phoneType,
-        serviceName: form.serviceName,
-        serviceCategory: form.serviceCategory,
-        description: form.description,
-        imageUrl: form.imageUrl,
-        price: Number(form.price),
-        estimatedDurationMinutes: Number(form.estimatedDurationMinutes),
-        active: form.active
-      };
+      const formData = new FormData();
+      formData.append('serviceName', form.serviceName);
+      formData.append('phoneType', form.phoneType);
+      formData.append('serviceCategory', form.serviceCategory);
+      formData.append('price', Number(form.price));
+      formData.append('estimatedDurationMinutes', Number(form.estimatedDurationMinutes));
+      formData.append('description', form.description || '');
+      formData.append('active', form.active);
+      if (imageFile) {
+        formData.append('imageFile', imageFile);
+      }
+
       if (editingId) {
-        await adminAPI.updateRepairPackageAdmin(editingId, payload);
+        await adminAPI.updateRepairPackageAdmin(editingId, formData);
       } else {
-        await adminAPI.createRepairPackageAdmin(payload);
+        await adminAPI.createRepairPackageAdmin(formData);
       }
       setShowModal(false);
       setForm(emptyForm);
       setEditingId(null);
+      setImageFile(null);
+      setImagePreview('');
       await loadData();
     } catch (err) {
       alert(err?.response?.data?.error || err.message || 'Lưu gói sửa chữa thất bại');
@@ -186,7 +209,31 @@ export default function RepairPackagesManagement() {
               </select>
               <input type="number" placeholder="Giá" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: e.target.value }))} required />
               <input type="number" placeholder="Thời lượng (phút)" value={form.estimatedDurationMinutes} onChange={(e) => setForm((p) => ({ ...p, estimatedDurationMinutes: e.target.value }))} required />
-              <input placeholder="URL ảnh minh họa" value={form.imageUrl} onChange={(e) => setForm((p) => ({ ...p, imageUrl: e.target.value }))} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontWeight: 600, color: '#475569', fontSize: '0.9rem' }}>Ảnh minh họa</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  style={{ padding: '0.5rem 0' }}
+                />
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Xem trước ảnh"
+                    style={{
+                      maxWidth: '100%',
+                      maxHeight: '200px',
+                      objectFit: 'contain',
+                      borderRadius: '0.5rem',
+                      border: '1px solid #e2e8f0',
+                      marginTop: '0.25rem'
+                    }}
+                  />
+                )}
+              </div>
+
               <textarea placeholder="Mô tả" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={4} />
               <label>
                 <input type="checkbox" checked={form.active} onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))} /> Đang hoạt động
@@ -199,3 +246,4 @@ export default function RepairPackagesManagement() {
     </div>
   );
 }
+

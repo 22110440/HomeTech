@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import base64
 import json
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import cv2
 import numpy as np
@@ -83,11 +85,11 @@ class ConditionEntry(BaseModel):
 
 
 class DeviceEntry(BaseModel):
-    id: int | None = None
+    id: Optional[int] = None
     brand_id: str
     phone_type_id: str
     model: str
-    display_name: str | None = None
+    display_name: Optional[str] = None
     storage_options: dict[str, int] = Field(default_factory=dict)
     base_price: int
     floor_price: int
@@ -350,8 +352,14 @@ def read_pricing() -> dict[str, Any]:
     return data
 
 
+def dump_pricing_payload(payload: PricingPayload) -> dict[str, Any]:
+    if hasattr(payload, "model_dump"):
+        return payload.model_dump()
+    return payload.dict()
+
+
 def write_pricing(payload: PricingPayload) -> dict[str, Any]:
-    data = payload.model_dump()
+    data = dump_pricing_payload(payload)
     data = normalize_catalog_relations(data)
     deduction_settings = data.setdefault("deduction_settings", {})
     deduction_settings["visual"] = {
@@ -714,7 +722,10 @@ def get_pricing() -> dict[str, Any]:
 
 @app.post("/pricing")
 def save_pricing(payload: PricingPayload) -> dict[str, Any]:
-    data = write_pricing(payload)
+    try:
+        data = write_pricing(payload)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Khong the luu bang gia thu cu doi moi: {exc}") from exc
     return {"message": "Da cap nhat danh muc va bang gia thu cu doi moi.", "data": data}
 
 

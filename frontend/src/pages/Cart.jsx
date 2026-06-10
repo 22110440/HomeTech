@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { userAPI, authAPI } from '../services/api';
+import { userAPI } from '../services/api';
 import api from '../services/api';
 import styles from './Cart.module.css';
 
@@ -13,12 +13,14 @@ const Cart = () => {
 
   useEffect(() => {
     loadUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (userInfo && userInfo.id) {
       loadCart();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo]);
 
   const loadUserInfo = async () => {
@@ -118,6 +120,7 @@ const Cart = () => {
       if (response && response.success === false) {
         throw new Error(response.message || 'Failed to increase quantity');
       }
+      window.dispatchEvent(new Event('hometech:cart-updated'));
     } catch (error) {
       console.error('Error increasing quantity:', error);
       console.error('Error details:', error.response?.data);
@@ -153,6 +156,7 @@ const Cart = () => {
       if (response && response.success === false) {
         throw new Error(response.message || 'Failed to decrease quantity');
       }
+      window.dispatchEvent(new Event('hometech:cart-updated'));
     } catch (error) {
       console.error('Error decreasing quantity:', error);
       console.error('Error details:', error.response?.data);
@@ -172,23 +176,12 @@ const Cart = () => {
 
       // Gọi API để sync với backend
       await userAPI.deleteCartItem(userInfo.id, itemId);
+      window.dispatchEvent(new Event('hometech:cart-updated'));
     } catch (error) {
       console.error('Error deleting item:', error);
       alert('Có lỗi xảy ra khi xóa sản phẩm');
       // Reload cart nếu có lỗi để đồng bộ lại
       loadCart();
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-      localStorage.clear();
-      navigate('/login');
-    } catch (err) {
-      console.error('Logout error:', err);
-      localStorage.clear();
-      navigate('/login');
     }
   };
 
@@ -229,33 +222,6 @@ const Cart = () => {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link to="/" className={styles.logo}>
-            <span className={styles.logoText}>HomeTech</span>
-          </Link>
-
-          <div className={styles.headerActions}>
-            <Link to="/" className={styles.homeButton}>
-              Trang chủ
-            </Link>
-            {userInfo ? (
-              <>
-                <span className={styles.username}>{userInfo.username}</span>
-                <button onClick={handleLogout} className={styles.logoutButton}>
-                  Đăng xuất
-                </button>
-              </>
-            ) : (
-              <Link to="/login" className={styles.loginButton}>
-                Đăng nhập
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
-
       {/* Cart Content */}
       <div className={styles.cartContent}>
         <div className={styles.cartHeader}>
@@ -382,4 +348,3 @@ const Cart = () => {
 };
 
 export default Cart;
-

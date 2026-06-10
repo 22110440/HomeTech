@@ -16,10 +16,21 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     long countByConversationAndSenderTypeAndReadIsFalse(Conversation conversation, SenderType senderType);
 
+    long countByConversationIdAndSenderTypeAndReadIsFalse(Long conversationId, SenderType senderType);
+
     @Modifying
     @Query("update ChatMessage m set m.read = true where m.conversation = :conversation and m.senderType = :senderType and m.read = false")
     void markAsReadForConversationAndSenderType(@Param("conversation") Conversation conversation,
                                                 @Param("senderType") SenderType senderType);
+
+    @Modifying
+    @Query("update ChatMessage m set m.read = true where m.conversation.id = :conversationId and m.senderType = :senderType and m.read = false")
+    void markAsReadByConversationIdAndSenderType(@Param("conversationId") Long conversationId,
+                                                  @Param("senderType") SenderType senderType);
+
+    List<ChatMessage> findTop10ByConversationIdOrderBySentAtDesc(Long conversationId);
+
+    java.util.Optional<ChatMessage> findTopByConversationAndSenderTypeOrderBySentAtDesc(Conversation conversation, SenderType senderType);
 }
 
 

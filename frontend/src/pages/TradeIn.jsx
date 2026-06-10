@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api, { tradeInAPI, userAPI } from '../services/api';
 import styles from './TradeIn.module.css';
 
@@ -50,6 +51,21 @@ const initialAppointmentForm = {
   note: '',
 };
 
+function getWeekValueFromDate(dateValue) {
+  if (!dateValue) return '';
+  const [year, month, day] = String(dateValue).split('-').map(Number);
+  if (!year || !month || !day) return '';
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (Number.isNaN(date.getTime())) return '';
+
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -86,6 +102,40 @@ function parseNumberInput(value) {
   if (!normalized || normalized === '-') return 0;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function toFiniteNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function toInteger(value, fallback = 0) {
+  return Math.round(toFiniteNumber(value, fallback));
+}
+
+function getTradeInErrorMessage(error) {
+  const data = error?.response?.data;
+
+  if (Array.isArray(data?.detail)) {
+    const messages = data.detail
+      .map((item) => {
+        const path = Array.isArray(item.loc)
+          ? item.loc.filter((part) => part !== 'body').join('.')
+          : '';
+        return path ? `${path}: ${item.msg}` : item.msg;
+      })
+      .filter(Boolean);
+
+    return messages.length ? messages.join('; ') : 'Không lưu được danh mục và bảng giá.';
+  }
+
+  if (typeof data?.detail === 'string') return data.detail;
+  if (typeof data?.error === 'string') return data.error;
+  if (typeof data?.message === 'string') return data.message;
+  if (typeof data === 'string') return data;
+  if (error?.message) return error.message;
+
+  return 'Không lưu được danh mục và bảng giá.';
 }
 
 function slugify(value) {
@@ -201,6 +251,7 @@ function normalizeDraftRelations(state) {
 }
 
 export default function TradeIn({ adminOnly = false }) {
+  const navigate = useNavigate();
   const isAdminView = adminOnly;
   const [catalog, setCatalog] = useState(createEmptyPricingState());
   const [draft, setDraft] = useState(createEmptyPricingState());
@@ -219,6 +270,7 @@ export default function TradeIn({ adminOnly = false }) {
   useEffect(() => {
     loadCatalog();
     loadUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadUserInfo() {
@@ -265,7 +317,7 @@ export default function TradeIn({ adminOnly = false }) {
       setCatalog(normalized);
       setDraft(normalized);
       setDefaultSelections(normalized);
-    } catch (err) {
+    } catch {
       setError('Không tải được danh mục thu cũ đổi mới. Hãy chạy FastAPI trước.');
     }
   }
@@ -420,6 +472,7 @@ export default function TradeIn({ adminOnly = false }) {
     setAppointmentLoading(true);
     setAppointmentMessage('');
     setError('');
+    let redirectUrl = '';
     try {
       const videoDataUrl = form.video ? await fileToDataUrl(form.video) : '';
       const payload = {
@@ -453,16 +506,27 @@ export default function TradeIn({ adminOnly = false }) {
         throw new Error(response?.error || response?.message || 'Không thể tạo lịch hẹn thu cũ đổi mới.');
       }
 
+      const appointmentDate = appointmentForm.appointmentDate;
+      const weekValue = getWeekValueFromDate(appointmentDate);
+      const params = new URLSearchParams();
+      if (weekValue) params.set('week', weekValue);
+      if (appointmentDate) params.set('date', appointmentDate);
+
       setAppointmentMessage('Đã gửi lịch hẹn thu cũ đổi mới. Thợ sẽ kiểm tra máy và báo giá cụ thể khi tiếp nhận.');
       setAppointmentForm((current) => ({
         ...initialAppointmentForm,
         customerName: current.customerName,
         phone: current.phone,
       }));
+      redirectUrl = `/my-repair-schedules${params.toString() ? `?${params.toString()}` : ''}`;
     } catch (err) {
       setError(err?.response?.data?.error || err.message || 'Không thể tạo lịch hẹn thu cũ đổi mới.');
     } finally {
       setAppointmentLoading(false);
+    }
+
+    if (redirectUrl) {
+      navigate(redirectUrl);
     }
   }
 
@@ -474,7 +538,6 @@ export default function TradeIn({ adminOnly = false }) {
       };
 
       if (section === 'devices' && key === 'brand_id') {
-        const device = nextState.devices[index];
         const nextPhoneType = getPhoneTypesForBrand(nextState.phone_types, value)[0] || nextState.phone_types[0];
         nextState.devices = nextState.devices.map((item, itemIndex) =>
           itemIndex === index
@@ -668,17 +731,16 @@ export default function TradeIn({ adminOnly = false }) {
     setError('');
     setAdminMessage('');
     try {
+      const normalizedDraft = normalizeDraftRelations(draft);
       const brandIdMap = new Map(
-        draft.brands.map((item, index) => [item.id, slugify(item.name || `brand-${index + 1}`)])
+        normalizedDraft.brands.map((item, index) => [item.id, slugify(item.name || `brand-${index + 1}`)])
       );
       const phoneTypeIdMap = new Map(
-        draft.phone_types.map((item, index) => [item.id, slugify(item.name || `type-${index + 1}`)])
+        normalizedDraft.phone_types.map((item, index) => [item.id, slugify(item.name || `type-${index + 1}`)])
       );
       const conditionIdMap = new Map(
-        draft.conditions.map((item, index) => [item.id, slugify(item.name || `condition-${index + 1}`)])
+        normalizedDraft.conditions.map((item, index) => [item.id, slugify(item.name || `condition-${index + 1}`)])
       );
-
-      const normalizedDraft = normalizeDraftRelations(draft);
 
       const payload = {
         brands: normalizedDraft.brands.map((item, index) => ({
@@ -694,48 +756,67 @@ export default function TradeIn({ adminOnly = false }) {
           id: conditionIdMap.get(item.id) || slugify(item.name || `condition-${index + 1}`),
           name: item.name || `Tình trạng ${index + 1}`,
           description: item.description || '',
-          health_percent: Number(item.health_percent ?? 0),
+          health_percent: toFiniteNumber(item.health_percent, 0),
         })),
         devices: normalizedDraft.devices.map((item, index) => {
           const resolvedPhoneType = normalizedDraft.phone_types.find((type) => type.id === item.phone_type_id);
-          return ({
-          id: item.id || index + 1,
-          brand_id: brandIdMap.get(resolvedPhoneType?.brand_id) || brandIdMap.get(normalizedDraft.brands[0]?.id) || '',
-          phone_type_id: phoneTypeIdMap.get(item.phone_type_id) || phoneTypeIdMap.get(normalizedDraft.phone_types[0]?.id) || '',
-          model: item.model || slugify(`model-${index + 1}`),
-          display_name: item.model || slugify(`model-${index + 1}`),
-          storage_options: Object.fromEntries(Object.entries(item.storage_options || {}).map(([key, value]) => [key, Number(value)])),
-          base_price: Number(item.base_price),
-          floor_price: Number(item.floor_price),
-          ceiling_price: Number(item.ceiling_price),
-          condition_prices: Object.fromEntries(
-            Object.entries(item.condition_prices || {}).map(([key, value]) => [
-              conditionIdMap.get(key) || key,
-              Number(value),
-            ])
-          ),
-        })}),
+          return {
+            id: item.id || index + 1,
+            brand_id: brandIdMap.get(resolvedPhoneType?.brand_id) || brandIdMap.get(normalizedDraft.brands[0]?.id) || '',
+            phone_type_id: phoneTypeIdMap.get(item.phone_type_id) || phoneTypeIdMap.get(normalizedDraft.phone_types[0]?.id) || '',
+            model: item.model || slugify(`model-${index + 1}`),
+            display_name: item.model || slugify(`model-${index + 1}`),
+            storage_options: Object.fromEntries(
+              Object.entries(item.storage_options || {}).map(([key, value]) => [key, toInteger(value, 0)])
+            ),
+            base_price: toInteger(item.base_price, 0),
+            floor_price: toInteger(item.floor_price, 0),
+            ceiling_price: toInteger(item.ceiling_price, 0),
+            condition_prices: Object.fromEntries(
+              Object.entries(item.condition_prices || {}).map(([key, value]) => [
+                conditionIdMap.get(key) || key,
+                toInteger(value, 0),
+              ])
+            ),
+          };
+        }),
         deduction_settings: {
           visual: Object.fromEntries(
-            Object.entries(normalizedDraft.deduction_settings?.visual || {}).map(([key, value]) => [key, Number(value)])
+            Object.entries(normalizedDraft.deduction_settings?.visual || {}).map(([key, value]) => [
+              key,
+              toFiniteNumber(value, 0),
+            ])
           ),
           functional: Object.fromEntries(
-            Object.entries(normalizedDraft.deduction_settings?.functional || {}).map(([key, value]) => [key, Number(value)])
+            Object.entries(normalizedDraft.deduction_settings?.functional || {}).map(([key, value]) => [
+              key,
+              toFiniteNumber(value, 0),
+            ])
           ),
           battery: {
-            threshold: Number(normalizedDraft.deduction_settings?.battery?.threshold || 85),
-            percent_per_point: Number(normalizedDraft.deduction_settings?.battery?.percent_per_point || 0),
+            threshold: toInteger(normalizedDraft.deduction_settings?.battery?.threshold, 85),
+            percent_per_point: toFiniteNumber(normalizedDraft.deduction_settings?.battery?.percent_per_point, 0),
           },
         },
       };
 
-      await tradeInAPI.savePricing(payload);
+      if (!payload.brands.length || !payload.phone_types.length || !payload.conditions.length) {
+        throw new Error('Cần có ít nhất một hãng, một dòng máy và một mức tình trạng.');
+      }
+
+      const invalidDevice = payload.devices.find((item) => !item.brand_id || !item.phone_type_id || !item.model);
+      if (invalidDevice) {
+        throw new Error('Mỗi thiết bị cần có hãng, dòng máy và mã model trước khi lưu.');
+      }
+
+      const response = await tradeInAPI.savePricing(payload);
+      const savedPayload = response?.data || payload;
       setAdminMessage('Đã cập nhật danh mục và bảng giá thu cũ đổi mới thành công.');
-      setCatalog(payload);
-      setDraft(payload);
-      setDefaultSelections(payload);
+      setCatalog(savedPayload);
+      setDraft(savedPayload);
+      setDefaultSelections(savedPayload);
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Không lưu được danh mục và bảng giá.');
+      setError(getTradeInErrorMessage(err));
     }
   }
 
@@ -751,7 +832,6 @@ export default function TradeIn({ adminOnly = false }) {
       <div className={styles.page}>
         <section className={styles.hero}>
           <div>
-            <p className={styles.eyebrow}>HomeTech Trade-In AI</p>
             <h1>{headerTitle}</h1>
             <p className={styles.lead}>{headerLead}</p>
           </div>
@@ -1017,11 +1097,11 @@ export default function TradeIn({ adminOnly = false }) {
                           />
                         </label>
 
-                        <div className={styles.fullWidth}>
+                        <div className={`${styles.fullWidth} ${styles.appointmentSubmitBlock}`}>
                           <p className={styles.muted}>
                             Lịch hẹn sẽ gửi kèm tên khách, kiểu máy, tình trạng, sức khỏe máy, % pin, khoảng giá, ảnh AI đã phân tích và video nếu bạn có tải lên.
                           </p>
-                          <button type="submit" disabled={appointmentLoading}>
+                          <button type="submit" className={styles.appointmentSubmitButton} disabled={appointmentLoading}>
                             {appointmentLoading ? 'Đang gửi lịch hẹn...' : 'Gửi lịch hẹn thu cũ đổi mới'}
                           </button>
                         </div>
@@ -1064,7 +1144,6 @@ export default function TradeIn({ adminOnly = false }) {
     <div className={styles.page}>
       <section className={styles.hero}>
         <div>
-          <p className={styles.eyebrow}>HomeTech Trade-In AI</p>
           <h1>{headerTitle}</h1>
           <p className={styles.lead}>{headerLead}</p>
         </div>

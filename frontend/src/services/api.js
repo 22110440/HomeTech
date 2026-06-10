@@ -332,18 +332,6 @@ export const adminAPI = {
     return response.data;
   },
 
-  updateOrderStatus: async (orderId, status) => {
-    const response = await api.put(`/orders/${orderId}/status`, null, {
-      params: { newStatus: status }
-    });
-    return response.data;
-  },
-
-  getOrderStatuses: async () => {
-    const response = await api.get('/orders/statuses');
-    return response.data;
-  },
-
   // Products
   getAllProducts: async () => {
     const response = await api.get('/products/all');
@@ -375,11 +363,14 @@ export const adminAPI = {
     return response.data;
   },
 
-  uploadProductImages: async (productId, files) => {
+  uploadProductImages: async (productId, files, variantId = null) => {
     const formData = new FormData();
     files.forEach(file => {
       formData.append('files', file);
     });
+    if (variantId) {
+      formData.append('variantId', variantId);
+    }
     const response = await api.post(`/products/${productId}/images`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -419,12 +410,18 @@ export const adminAPI = {
   },
 
   createBanner: async (payload) => {
-    const response = await api.post('/admin/content/banners', payload);
+    const config = payload instanceof FormData
+      ? { headers: { 'Content-Type': 'multipart/form-data' } }
+      : undefined;
+    const response = await api.post('/admin/content/banners', payload, config);
     return response.data;
   },
 
   updateBanner: async (id, payload) => {
-    const response = await api.put(`/admin/content/banners/${id}`, payload);
+    const config = payload instanceof FormData
+      ? { headers: { 'Content-Type': 'multipart/form-data' } }
+      : undefined;
+    const response = await api.put(`/admin/content/banners/${id}`, payload, config);
     return response.data;
   },
 
@@ -575,13 +572,17 @@ export const adminAPI = {
     return response.data;
   },
 
-  createRepairPackageAdmin: async (payload) => {
-    const response = await api.post('/admin/repair-packages', payload);
+  createRepairPackageAdmin: async (formData) => {
+    const response = await api.post('/admin/repair-packages', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
-  updateRepairPackageAdmin: async (id, payload) => {
-    const response = await api.put(`/admin/repair-packages/${id}`, payload);
+  updateRepairPackageAdmin: async (id, formData) => {
+    const response = await api.put(`/admin/repair-packages/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return response.data;
   },
 
@@ -1093,6 +1094,33 @@ export const chatAPI = {
   getOrCreateAdminConversationForUser: async (userId) => {
     // Backend mapping: @GetMapping("/admin/customer/{userId}/conversation") under @RequestMapping("/api/chat")
     const response = await api.get(`/chat/admin/customer/${userId}/conversation`);
+    return response.data;
+  },
+};
+
+export const chatbotAPI = {
+  getSettings: async () => {
+    const response = await api.get('/admin/chatbot/settings');
+    return response.data;
+  },
+  updateSettings: async (settings) => {
+    const response = await api.post('/admin/chatbot/settings', settings);
+    return response.data;
+  },
+  getRules: async () => {
+    const response = await api.get('/admin/chatbot/rules');
+    return response.data;
+  },
+  createRule: async (rule) => {
+    const response = await api.post('/admin/chatbot/rules', rule);
+    return response.data;
+  },
+  updateRule: async (id, rule) => {
+    const response = await api.put(`/admin/chatbot/rules/${id}`, rule);
+    return response.data;
+  },
+  deleteRule: async (id) => {
+    const response = await api.delete(`/admin/chatbot/rules/${id}`);
     return response.data;
   },
 };

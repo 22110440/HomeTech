@@ -29,7 +29,7 @@ public class ChatMessage {
 
     private Long senderId;
 
-    @Column(nullable = false, length = 1000)
+    @Column(nullable = true, length = 2000)
     private String content;
     @Lob
     @Column(name = "file_data", columnDefinition = "LONGBLOB")
@@ -65,11 +65,35 @@ public class ChatMessage {
     @Column(name = "is_read")
     private boolean read;
 
+    @Column(name = "is_auto_reply")
+    private Boolean isAutoReply = false;
+
+    @Column(name = "chatbot_intent", length = 80)
+    private String chatbotIntent;
+
+    @Column(name = "handoff_requested")
+    private Boolean handoffRequested = false;
+
+    public boolean isAutoReply() {
+        return isAutoReply != null && isAutoReply;
+    }
+
+    public void setAutoReply(Boolean autoReply) {
+        this.isAutoReply = autoReply != null ? autoReply : false;
+    }
+
+    public boolean isHandoffRequested() {
+        return handoffRequested != null && handoffRequested;
+    }
+
+    public void setHandoffRequested(Boolean handoffRequested) {
+        this.handoffRequested = handoffRequested != null ? handoffRequested : false;
+    }
+
     @PrePersist
     public void prePersist() {
         sentAt = LocalDateTime.now();
         read = false;
     }
 }
-
 

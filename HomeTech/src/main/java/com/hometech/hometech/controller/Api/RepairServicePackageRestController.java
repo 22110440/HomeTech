@@ -3,6 +3,7 @@ package com.hometech.hometech.controller.Api;
 import com.hometech.hometech.model.RepairServicePackage;
 import com.hometech.hometech.service.RepairServicePackageService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -59,4 +60,24 @@ public class RepairServicePackageRestController {
             return buildResponse(false, "Không tìm thấy gói sửa chữa", null, e.getMessage(), HttpStatus.NOT_FOUND);
         }
     }
+
+    /**
+     * Serve the uploaded image for a repair package (public access).
+     */
+    @GetMapping("/{id}/image")
+    public ResponseEntity<byte[]> getRepairPackageImage(@PathVariable Long id) {
+        try {
+            RepairServicePackage pkg = repairServicePackageService.getPackageById(id);
+            if (pkg.getImageData() == null || pkg.getImageData().length == 0) {
+                return ResponseEntity.notFound().build();
+            }
+            String contentType = pkg.getImageContentType() != null ? pkg.getImageContentType() : "image/jpeg";
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(pkg.getImageData());
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
+

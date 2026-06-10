@@ -3,11 +3,6 @@ import { adminAPI } from '../../services/api';
 import styles from './BannerSliderManagement.module.css';
 
 const bannerTemplate = {
-  title: '',
-  subtitle: '',
-  imageUrl: '',
-  redirectUrl: '',
-  buttonText: '',
   displayOrder: 0,
   type: 'BANNER',
   active: true,
@@ -34,12 +29,23 @@ function BannerSliderManagement() {
   const [sliders, setSliders] = useState([]);
   const [formData, setFormData] = useState(bannerTemplate);
   const [editingId, setEditingId] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
   const [footerForm, setFooterForm] = useState(footerTemplate);
   const [statusMessage, setStatusMessage] = useState(null);
 
   useEffect(() => {
     loadContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview?.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const loadContent = async () => {
     try {
@@ -73,6 +79,16 @@ function BannerSliderManagement() {
     }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (imagePreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImageFile(file);
+    setImagePreview(file ? URL.createObjectURL(file) : '');
+    e.target.value = '';
+  };
+
   const handleFooterChange = (e) => {
     const { name, value } = e.target;
     setFooterForm((prev) => ({
@@ -83,10 +99,31 @@ function BannerSliderManagement() {
 
   const handleBannerSubmit = async (e) => {
     e.preventDefault();
-    const payload = {
-      ...formData,
-      displayOrder: Number(formData.displayOrder) || 0,
-    };
+    const editingItem = [...banners, ...sliders].find((item) => item.id === editingId);
+    const sliderLimitReached =
+      formData.type === 'SLIDER' &&
+      sliders.length >= 2 &&
+      editingItem?.type !== 'SLIDER';
+
+    if (sliderLimitReached) {
+      showStatus('error', 'Slider cố định hai bên chỉ được quản lý tối đa 2 ảnh');
+      return;
+    }
+
+    if (!editingId && !imageFile) {
+      showStatus('error', 'Vui lòng chọn file ảnh từ máy');
+      return;
+    }
+
+    const payload = new FormData();
+    payload.append('type', formData.type);
+    payload.append('displayOrder', String(Number(formData.displayOrder) || 0));
+    payload.append('active', String(Boolean(formData.active)));
+    payload.append('showOnMobile', String(Boolean(formData.showOnMobile)));
+    if (imageFile) {
+      payload.append('image', imageFile);
+    }
+
     try {
       if (editingId) {
         await adminAPI.updateBanner(editingId, payload);
@@ -99,7 +136,7 @@ function BannerSliderManagement() {
       handleResetForm();
     } catch (error) {
       console.error('Save banner failed:', error);
-      showStatus('error', error.response?.data?.message || 'Không thể lưu banner');
+      showStatus('error', error.response?.data?.message || error.response?.data?.error || 'Không thể lưu banner');
     }
   };
 
@@ -118,22 +155,24 @@ function BannerSliderManagement() {
   const handleEdit = (item) => {
     setEditingId(item.id);
     setFormData({
-      title: item.title || '',
-      subtitle: item.subtitle || '',
-      imageUrl: item.imageUrl || '',
-      redirectUrl: item.redirectUrl || '',
-      buttonText: item.buttonText || '',
       displayOrder: item.displayOrder ?? 0,
       type: item.type || 'BANNER',
       active: item.active,
       showOnMobile: item.showOnMobile,
     });
+    setImageFile(null);
+    setImagePreview(item.imageUrl || '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleResetForm = () => {
+    if (imagePreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
     setEditingId(null);
     setFormData(bannerTemplate);
+    setImageFile(null);
+    setImagePreview('');
   };
 
   const handleToggle = async (item) => {
@@ -148,7 +187,7 @@ function BannerSliderManagement() {
   };
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Xác nhận xóa ${item.title}?`)) return;
+    if (!window.confirm(`Xác nhận xóa ảnh #${item.id}?`)) return;
     try {
       await adminAPI.deleteBanner(item.id);
       showStatus('success', 'Đã xóa banner/slider');
@@ -171,15 +210,15 @@ function BannerSliderManagement() {
             <div className={styles.cardImage} style={{ backgroundImage: `url(${item.imageUrl})` }} />
             <div className={styles.cardBody}>
               <div className={styles.cardTop}>
-                <h4>{item.title}</h4>
+                <h4>{item.type === 'SLIDER' ? 'Ảnh cố định cạnh trang' : 'Banner trang chủ'} #{item.id}</h4>
                 <span className={`${styles.statusBadge} ${item.active ? styles.active : styles.inactive}`}>
                   {item.active ? 'Đang hiển thị' : 'Đã ẩn'}
                 </span>
               </div>
-              {item.subtitle && <p className={styles.cardSubtitle}>{item.subtitle}</p>}
               <div className={styles.meta}>
                 <span>Thứ tự: {item.displayOrder ?? 0}</span>
                 <span>Loại: {item.type}</span>
+                {item.imageFileName && <span>File: {item.imageFileName}</span>}
               </div>
               <div className={styles.cardActions}>
                 <button type="button" onClick={() => handleEdit(item)}>Sửa</button>
@@ -205,6 +244,12 @@ function BannerSliderManagement() {
       </div>
     );
   }
+
+  const editingItem = [...banners, ...sliders].find((item) => item.id === editingId);
+  const sliderLimitReached =
+    formData.type === 'SLIDER' &&
+    sliders.length >= 2 &&
+    editingItem?.type !== 'SLIDER';
 
   return (
     <div className={styles.container}>
@@ -233,27 +278,21 @@ function BannerSliderManagement() {
           )}
         </div>
         <form className={styles.form} onSubmit={handleBannerSubmit}>
+          <label className={styles.imagePicker}>
+            <span>Ảnh hiển thị</span>
+            <input type="file" accept="image/*" onChange={handleImageChange} />
+            <div className={styles.imagePickerBody}>
+              {imagePreview ? (
+                <img src={imagePreview} alt="Ảnh banner/slider" />
+              ) : (
+                <div className={styles.imagePlaceholder}>
+                  <strong>Chọn file ảnh từ máy</strong>
+                  <small>Khuyến nghị: banner ngang cho Banner, ảnh dọc cho Slider hai bên.</small>
+                </div>
+              )}
+            </div>
+          </label>
           <div className={styles.formGrid}>
-            <label>
-              Tiêu đề
-              <input name="title" value={formData.title} onChange={handleChange} required />
-            </label>
-            <label>
-              Tiêu đề phụ
-              <input name="subtitle" value={formData.subtitle} onChange={handleChange} />
-            </label>
-            <label>
-              Ảnh (URL)
-              <input name="imageUrl" value={formData.imageUrl} onChange={handleChange} required />
-            </label>
-            <label>
-              Liên kết chuyển hướng
-              <input name="redirectUrl" value={formData.redirectUrl} onChange={handleChange} />
-            </label>
-            <label>
-              Nội dung nút
-              <input name="buttonText" value={formData.buttonText} onChange={handleChange} />
-            </label>
             <label>
               Thứ tự hiển thị
               <input
@@ -267,8 +306,8 @@ function BannerSliderManagement() {
             <label>
               Loại
               <select name="type" value={formData.type} onChange={handleChange}>
-                <option value="BANNER">Banner</option>
-                <option value="SLIDER">Slider</option>
+                <option value="BANNER">Banner trang chủ</option>
+                <option value="SLIDER">Ảnh cố định hai bên</option>
               </select>
             </label>
             <label className={styles.checkbox}>
@@ -290,14 +329,21 @@ function BannerSliderManagement() {
               Hiển thị trên mobile
             </label>
           </div>
+          {sliderLimitReached && (
+            <p className={styles.limitNotice}>
+              Slider cố định hai bên đã đủ 2 ảnh. Hãy sửa/xóa ảnh hiện có nếu muốn thay thế.
+            </p>
+          )}
           <div className={styles.formActions}>
-            <button type="submit">{editingId ? 'Cập nhật' : 'Thêm mới'}</button>
+            <button type="submit" disabled={sliderLimitReached}>
+              {editingId ? 'Cập nhật' : 'Thêm mới'}
+            </button>
           </div>
         </form>
       </section>
 
       {renderList(banners, 'Banner trang chủ')}
-      {renderList(sliders, 'Slider khuyến mãi')}
+      {renderList(sliders, 'Ảnh cố định hai bên (tối đa 2)')}
 
       <section className={styles.panel}>
         <div className={styles.panelHeader}>
@@ -360,4 +406,3 @@ function BannerSliderManagement() {
 }
 
 export default BannerSliderManagement;
-

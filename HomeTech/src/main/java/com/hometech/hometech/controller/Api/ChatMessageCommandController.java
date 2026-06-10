@@ -26,21 +26,29 @@ import com.hometech.hometech.enums.SenderType;
 import com.hometech.hometech.model.ChatMessage;
 import com.hometech.hometech.service.ChatIdentityService;
 import com.hometech.hometech.service.ConversationService;
+import com.hometech.hometech.service.ChatbotService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/chat")
 public class ChatMessageCommandController {
 
+    private static final Logger log = LoggerFactory.getLogger(ChatMessageCommandController.class);
+
     private final ChatIdentityService chatIdentityService;
     private final ConversationService conversationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatbotService chatbotService;
 
     public ChatMessageCommandController(ChatIdentityService chatIdentityService,
                                         ConversationService conversationService,
-                                        SimpMessagingTemplate messagingTemplate) {
+                                        SimpMessagingTemplate messagingTemplate,
+                                        ChatbotService chatbotService) {
         this.chatIdentityService = chatIdentityService;
         this.conversationService = conversationService;
         this.messagingTemplate = messagingTemplate;
+        this.chatbotService = chatbotService;
     }
 
     @GetMapping("/conversations/me")
@@ -85,11 +93,34 @@ public class ChatMessageCommandController {
                             dto.put("username", "Khách hàng");
                         }
                         dto.put("lastMessageAt", c.getLastMessageAt());
+                        dto.put("unreadCount", conversationService.getUnreadCountForAdmin(c.getId()));
+                        dto.put("handoffRequested", c.isHandoffRequested());
+                        dto.put("handoffReason", c.getHandoffReason());
+                        dto.put("handoffRequestedAt", c.getHandoffRequestedAt());
+                        dto.put("lastBotIntent", c.getLastBotIntent());
                         return dto;
                     })
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(items);
+        } catch (RuntimeException e) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
+
+    @PostMapping("/admin/mark-read/{conversationId}")
+    public ResponseEntity<?> markAsReadForAdmin(@PathVariable Long conversationId,
+                                                 @AuthenticationPrincipal UserDetails userDetails) {
+        try {
+            ChatIdentityService.ChatIdentity identity = chatIdentityService.resolve(userDetails);
+            if (!identity.isAdmin()) {
+                throw new RuntimeException("Chỉ admin mới có thể đánh dấu đã đọc");
+            }
+            conversationService.markMessagesAsReadForAdmin(conversationId);
+            return ResponseEntity.ok(Map.of("success", true));
         } catch (RuntimeException e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
@@ -112,7 +143,7 @@ public class ChatMessageCommandController {
             List<ChatMessagePayload> payloads = messages.stream().map(m -> {
                 ChatMessagePayload p = new ChatMessagePayload();
                 p.setId(m.getId());
-                p.setSenderType(m.getSenderType().name());
+                p.setSenderType(m.getSenderType() != null ? m.getSenderType().name() : null);
                 p.setSenderId(m.getSenderId());
                 p.setContent(m.getContent());
                 p.setSentAt(m.getSentAt());
@@ -120,11 +151,15 @@ public class ChatMessageCommandController {
                 p.setHasFile(m.getFileData() != null);
                 p.setFileName(m.getFileName());
                 p.setFileContentType(m.getFileContentType());
+                p.setAutoReply(m.isAutoReply());
+                p.setChatbotIntent(m.getChatbotIntent());
+                p.setHandoffRequested(m.isHandoffRequested());
                 return p;
             }).collect(Collectors.toList());
 
             return ResponseEntity.ok(payloads);
         } catch (RuntimeException e) {
+            log.error("Lỗi khi lấy tin nhắn của cuộc hội thoại {}", id, e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());
@@ -187,6 +222,10 @@ public class ChatMessageCommandController {
                 dto.put("username", "Khách hàng");
             }
             dto.put("lastMessageAt", conversation.getLastMessageAt());
+            dto.put("handoffRequested", conversation.isHandoffRequested());
+            dto.put("handoffReason", conversation.getHandoffReason());
+            dto.put("handoffRequestedAt", conversation.getHandoffRequestedAt());
+            dto.put("lastBotIntent", conversation.getLastBotIntent());
 
             return ResponseEntity.ok(dto);
         } catch (RuntimeException e) {
@@ -237,16 +276,27 @@ public class ChatMessageCommandController {
             // 3. Build payload realtime
             ChatMessagePayload payload = new ChatMessagePayload();
             payload.setId(savedMessage.getId());
-            payload.setSenderType(savedMessage.getSenderType().name());
+            payload.setSenderType(savedMessage.getSenderType() != null ? savedMessage.getSenderType().name() : null);
             payload.setSenderId(savedMessage.getSenderId());
             payload.setContent(savedMessage.getContent());
             payload.setSentAt(savedMessage.getSentAt());
+            payload.setHasFile(savedMessage.getFileData() != null);
+            payload.setFileName(savedMessage.getFileName());
+            payload.setFileContentType(savedMessage.getFileContentType());
+            payload.setAutoReply(savedMessage.isAutoReply());
+            payload.setChatbotIntent(savedMessage.getChatbotIntent());
+            payload.setHandoffRequested(savedMessage.isHandoffRequested());
 
             // 4. Gửi WebSocket
             messagingTemplate.convertAndSend(
                     "/topic/conversations/" + conversationId,
                     payload
             );
+
+            // 5. Trigger chatbot tự động phản hồi
+            if (identity.isCustomer()) {
+                chatbotService.triggerAutoReply(conversationId, content);
+            }
 
             return ResponseEntity.ok(payload);
 
@@ -292,5 +342,4 @@ public class ChatMessageCommandController {
                 .body(message.getFileData());
     }
 }
-
 

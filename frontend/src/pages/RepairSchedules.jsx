@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api, { userAPI } from '../services/api';
 import styles from './RepairPackages.module.css';
 
@@ -53,6 +53,10 @@ function getWeekDateRange(weekValue) {
   };
 }
 
+function isValidWeekValue(weekValue) {
+  return /^\d{4}-W\d{2}$/.test(String(weekValue || '')) && Boolean(getWeekDateRange(weekValue));
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -85,10 +89,14 @@ function formatBookingTitle(booking) {
 }
 
 export default function RepairSchedules() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const weekParam = searchParams.get('week');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekValue());
+  const [selectedWeek, setSelectedWeek] = useState(() =>
+    isValidWeekValue(weekParam) ? weekParam : getCurrentWeekValue()
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -111,6 +119,25 @@ export default function RepairSchedules() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    if (isValidWeekValue(weekParam) && weekParam !== selectedWeek) {
+      setSelectedWeek(weekParam);
+    }
+  }, [selectedWeek, weekParam]);
+
+  function handleWeekChange(event) {
+    const nextWeek = event.target.value;
+    setSelectedWeek(nextWeek);
+
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextWeek) {
+      nextParams.set('week', nextWeek);
+    } else {
+      nextParams.delete('week');
+    }
+    setSearchParams(nextParams, { replace: true });
+  }
 
   const weekRange = useMemo(() => getWeekDateRange(selectedWeek), [selectedWeek]);
 
@@ -143,7 +170,7 @@ export default function RepairSchedules() {
 
       <div className={styles.search} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <label style={{ fontWeight: 700 }}>Tuần:</label>
-        <input type="week" value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)} />
+        <input type="week" value={selectedWeek} onChange={handleWeekChange} />
         {weekRange && <span>{weekRange.start} - {weekRange.end}</span>}
       </div>
 

@@ -1,7 +1,7 @@
 // src/pages/admin/OrdersManagement.jsx
 import { useEffect, useMemo, useState } from 'react';
 import { adminAPI } from '../../services/api';
-import styles from './ProductsManagement.module.css';
+import styles from './OrdersManagement.module.css';
 
 const STATUS_META = {
   WAITING_CONFIRMATION: { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-800' },
@@ -135,6 +135,7 @@ export default function OrdersManagement() {
 
   useEffect(() => {
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -342,115 +343,118 @@ export default function OrdersManagement() {
           <div className={styles.modalContent} onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>Đơn hàng #{selectedOrder.id}</h2>
-              <button className={styles.closeButton} onClick={() => setSelectedOrder(null)}>
+              <button className={styles.closeButton} onClick={() => setSelectedOrder(null)} type="button">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-              <div className="space-y-3">
-                <p><strong>Khách hàng:</strong> {selectedOrder.orderInfo?.fullName || selectedOrder.customer?.username || 'Khách lẻ'}</p>
-                <p><strong>Email:</strong> {selectedOrder.orderInfo?.email || selectedOrder.customer?.email || '—'}</p>
-                <p><strong>Số điện thoại:</strong> {selectedOrder.orderInfo?.phone || selectedOrder.customer?.phone || '—'}</p>
-                <p><strong>Địa chỉ giao:</strong> {formatOrderAddress(selectedOrder.orderInfo)}</p>
-              </div>
-              <div className="space-y-3">
-                <p><strong>Tổng tiền:</strong> <span className="text-xl font-semibold text-green-600">{formatCurrency(selectedOrder.totalAmount)}</span></p>
-                <p><strong>Trạng thái:</strong>{' '}
-                  <span
-                    className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold ${
-                      STATUS_META[selectedOrder.status]?.color || 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    {STATUS_META[selectedOrder.status]?.label || selectedOrder.status}
-                  </span>
-                </p>
-                <p><strong>Ngày tạo:</strong> {formatDateTime(selectedOrder.createdAt)}</p>
-              </div>
-            </div>
-
-            <h3 className="font-bold text-lg mb-3">Danh sách sản phẩm</h3>
-            <div className="border rounded-lg overflow-hidden mb-6">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-4 py-3">Sản phẩm</th>
-                    <th className="text-center px-4 py-3">SL</th>
-                    <th className="text-right px-4 py-3">Đơn giá</th>
-                    <th className="text-right px-4 py-3">Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(selectedOrder.items || []).length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="text-center py-8 text-gray-500">
-                        Không có sản phẩm
-                      </td>
-                    </tr>
-                  ) : (
-                    (selectedOrder.items || []).map((item) => (
-                      <tr key={item.id} className="border-t">
-                        <td className="px-4 py-3">
-                          {item.product?.name || 'Sản phẩm đã xóa'}
-                          {item.variant && (
-                            <span className="ml-2 text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                              - {item.variant.name}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-center">{item.quantity}</td>
-                        <td className="px-4 py-3 text-right">{formatCurrency(item.price)}</td>
-                        <td className="px-4 py-3 text-right font-medium">
-                          {formatCurrency(item.price * item.quantity)}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className={styles.modalActions}>
-              <div className="flex flex-col gap-3 w-full">
-                <label className="text-sm font-medium text-gray-600">
-                  Chọn trạng thái mới
-                </label>
-                <div className="flex flex-col md:flex-row gap-3">
-                  <select
-                    value={statusSelection}
-                    onChange={(event) => setStatusSelection(event.target.value)}
-                    className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  >
-                    {statusFilters
-                      .filter((status) => status !== 'ALL')
-                      .map((status) => (
-                        <option key={status} value={status}>
-                          {STATUS_META[status]?.label || status}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    className={styles.submitButton}
-                    disabled={updatingStatus || statusSelection === selectedOrder.status}
-                    onClick={() => handleUpdateStatus(selectedOrder.id, statusSelection)}
-                  >
-                    {updatingStatus ? 'Đang cập nhật...' : 'Cập nhật trạng thái'}
-                  </button>
+            <div className={styles.modalBody}>
+              <div className={styles.orderSummaryGrid}>
+                <div className={styles.orderSummaryColumn}>
+                  <p><strong>Khách hàng:</strong> {selectedOrder.orderInfo?.fullName || selectedOrder.customer?.username || 'Khách lẻ'}</p>
+                  <p><strong>Email:</strong> {selectedOrder.orderInfo?.email || selectedOrder.customer?.email || '—'}</p>
+                  <p><strong>Số điện thoại:</strong> {selectedOrder.orderInfo?.phone || selectedOrder.customer?.phone || '—'}</p>
+                  <p><strong>Địa chỉ giao:</strong> {formatOrderAddress(selectedOrder.orderInfo)}</p>
+                </div>
+                <div className={styles.orderSummaryColumn}>
+                  <p><strong>Tổng tiền:</strong> <span className="text-xl font-semibold text-green-600">{formatCurrency(selectedOrder.totalAmount)}</span></p>
+                  <p>
+                    <strong>Trạng thái:</strong>{' '}
+                    <span
+                      className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold ${
+                        STATUS_META[selectedOrder.status]?.color || 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {STATUS_META[selectedOrder.status]?.label || selectedOrder.status}
+                    </span>
+                  </p>
+                  <p><strong>Ngày tạo:</strong> {formatDateTime(selectedOrder.createdAt)}</p>
                 </div>
               </div>
-              <div className="flex flex-col md:flex-row gap-3 w-full">
-                <button
-                  className={`${styles.submitButton} bg-red-600 hover:bg-red-700`}
-                  onClick={() => handleCancelOrder(selectedOrder.id)}
-                  disabled={selectedOrder.status === 'CANCELLED'}
-                >
-                  Hủy đơn
-                </button>
-                <button className={styles.cancelButton} onClick={() => setSelectedOrder(null)}>
-                  Đóng
-                </button>
+
+              <h3 className={styles.itemsTitle}>Danh sách sản phẩm</h3>
+              <div className={styles.itemsTableWrap}>
+                <table className={styles.itemsTable}>
+                  <thead>
+                    <tr>
+                      <th>Sản phẩm</th>
+                      <th>SL</th>
+                      <th>Đơn giá</th>
+                      <th>Thành tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(selectedOrder.items || []).length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className={styles.emptyItemsCell}>
+                          Không có sản phẩm
+                        </td>
+                      </tr>
+                    ) : (
+                      (selectedOrder.items || []).map((item) => (
+                        <tr key={item.id}>
+                          <td>
+                            {item.product?.name || 'Sản phẩm đã xóa'}
+                            {item.variant && (
+                              <span className="ml-2 text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                - {item.variant.name}
+                              </span>
+                            )}
+                          </td>
+                          <td>{item.quantity}</td>
+                          <td>{formatCurrency(item.price)}</td>
+                          <td>{formatCurrency(item.price * item.quantity)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className={styles.modalActions}>
+                <div className={styles.statusUpdatePanel}>
+                  <label className={styles.statusUpdateLabel}>
+                    Chọn trạng thái mới
+                  </label>
+                  <div className={styles.statusUpdateRow}>
+                    <select
+                      value={statusSelection}
+                      onChange={(event) => setStatusSelection(event.target.value)}
+                      className={styles.statusUpdateSelect}
+                    >
+                      {statusFilters
+                        .filter((status) => status !== 'ALL')
+                        .map((status) => (
+                          <option key={status} value={status}>
+                            {STATUS_META[status]?.label || status}
+                          </option>
+                        ))}
+                    </select>
+                    <button
+                      className={styles.submitButton}
+                      disabled={updatingStatus || statusSelection === selectedOrder.status}
+                      onClick={() => handleUpdateStatus(selectedOrder.id, statusSelection)}
+                      type="button"
+                    >
+                      {updatingStatus ? 'Đang cập nhật...' : 'Cập nhật trạng thái'}
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.orderActionGroup}>
+                  <button
+                    className={styles.cancelOrderButton}
+                    onClick={() => handleCancelOrder(selectedOrder.id)}
+                    disabled={selectedOrder.status === 'CANCELLED'}
+                    type="button"
+                  >
+                    Hủy đơn
+                  </button>
+                  <button className={styles.cancelButton} onClick={() => setSelectedOrder(null)} type="button">
+                    Đóng
+                  </button>
+                </div>
               </div>
             </div>
           </div>

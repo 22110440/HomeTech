@@ -18,6 +18,7 @@ import NotificationBell from './components/NotificationBell';
 import ChatWidget from './components/ChatWidget';
 import VnPayResult from './pages/VnPayResult';
 import PayOsResult from './pages/PayOsResult';
+import OrderSuccess from './pages/OrderSuccess';
 import CustomerHeader from './components/CustomerHeader';
 import RepairBooking from './pages/RepairBooking';
 import RepairPackages from './pages/RepairPackages';
@@ -31,7 +32,10 @@ function AppRoutes() {
   const location = useLocation();
   const path = location.pathname.toLowerCase();
   const isAdminRoute = path.startsWith('/admin');
-  const hideCustomerHeader = ['/', '/login', '/register', '/forgot-password', '/reset-password', '/admin/login', '/adminlogin'].includes(path);
+  const authRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/admin/login', '/adminlogin', '/oauth2/callback'];
+  const resultRoutes = ['/payment/vnpay/result', '/payment/payos/result', '/order-success'];
+  const hideCustomerHeader = ['/', ...authRoutes, ...resultRoutes].includes(path);
+  const hideFloatingWidgets = authRoutes.includes(path) || resultRoutes.includes(path);
 
   return (
     <>
@@ -63,6 +67,7 @@ function AppRoutes() {
         <Route path="/expenses" element={<ExpenseManagement />} />
         <Route path="/payment/vnpay/result" element={<VnPayResult />} />
         <Route path="/payment/payos/result" element={<PayOsResult />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/repair-booking" element={<RepairBooking />} />
         <Route path="/repair-packages" element={<RepairPackages />} />
@@ -74,8 +79,8 @@ function AppRoutes() {
         {/* Default redirect */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <NotificationBell />
-      {!isAdminRoute && <ChatWidget />}
+      {!hideFloatingWidgets && <NotificationBell />}
+      {!isAdminRoute && !hideFloatingWidgets && <ChatWidget />}
     </>
   );
 }

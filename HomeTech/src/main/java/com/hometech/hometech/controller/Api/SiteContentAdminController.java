@@ -5,10 +5,12 @@ import com.hometech.hometech.model.Banner;
 import com.hometech.hometech.model.FooterContent;
 import com.hometech.hometech.service.BannerService;
 import com.hometech.hometech.service.FooterContentService;
+import org.springframework.http.MediaType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +58,7 @@ public class SiteContentAdminController {
         return buildResponse(true, "Lấy banner thành công", banner, HttpStatus.OK);
     }
 
-    @PostMapping("/banners")
+    @PostMapping(value = "/banners", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> createBanner(@RequestBody Banner banner) {
         try {
             Banner saved = bannerService.create(banner);
@@ -66,10 +68,46 @@ public class SiteContentAdminController {
         }
     }
 
-    @PutMapping("/banners/{id}")
+    @PostMapping(value = "/banners", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> createBannerFromFile(
+            @RequestParam(name = "type", required = false) String type,
+            @RequestParam(name = "displayOrder", required = false) Integer displayOrder,
+            @RequestParam(name = "active", required = false) Boolean active,
+            @RequestParam(name = "showOnMobile", required = false) Boolean showOnMobile,
+            @RequestParam(name = "image", required = false) MultipartFile image) {
+        try {
+            Banner payload = buildBannerPayload(type, displayOrder, active, showOnMobile);
+            Banner saved = bannerService.create(payload, image);
+            return buildResponse(true, "Tạo banner/slider thành công", saved, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            return buildResponse(false, e.getMessage(), null, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PutMapping(value = "/banners/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> updateBanner(@PathVariable Long id, @RequestBody Banner banner) {
         try {
             Banner updated = bannerService.update(id, banner);
+            if (updated == null) {
+                return buildResponse(false, "Không tìm thấy banner", null, HttpStatus.NOT_FOUND);
+            }
+            return buildResponse(true, "Cập nhật banner/slider thành công", updated, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return buildResponse(false, e.getMessage(), null, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PutMapping(value = "/banners/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Map<String, Object>> updateBannerFromFile(
+            @PathVariable Long id,
+            @RequestParam(name = "type", required = false) String type,
+            @RequestParam(name = "displayOrder", required = false) Integer displayOrder,
+            @RequestParam(name = "active", required = false) Boolean active,
+            @RequestParam(name = "showOnMobile", required = false) Boolean showOnMobile,
+            @RequestParam(name = "image", required = false) MultipartFile image) {
+        try {
+            Banner payload = buildBannerPayload(type, displayOrder, active, showOnMobile);
+            Banner updated = bannerService.update(id, payload, image);
             if (updated == null) {
                 return buildResponse(false, "Không tìm thấy banner", null, HttpStatus.NOT_FOUND);
             }
@@ -123,5 +161,14 @@ public class SiteContentAdminController {
             return null;
         }
     }
-}
 
+    private Banner buildBannerPayload(String type, Integer displayOrder, Boolean active, Boolean showOnMobile) {
+        Banner banner = new Banner();
+        BannerType bannerType = parseType(type);
+        banner.setType(bannerType != null ? bannerType : BannerType.BANNER);
+        banner.setDisplayOrder(displayOrder != null ? displayOrder : 0);
+        banner.setActive(active == null || active);
+        banner.setShowOnMobile(showOnMobile == null || showOnMobile);
+        return banner;
+    }
+}

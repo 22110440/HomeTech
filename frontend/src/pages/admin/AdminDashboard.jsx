@@ -13,6 +13,7 @@ import RepairManagementHub from './RepairManagementHub';
 import RevenueStatistics from './RevenueStatistics';
 import BannerSliderManagement from './BannerSliderManagement';
 import ChatManagement from './ChatManagement';
+import ChatbotManagement from './ChatbotManagement';
 import TradeIn from '../TradeIn';
 import styles from './AdminDashboard.module.css';
 
@@ -95,6 +96,8 @@ function AdminDashboard() {
         return <BannerSliderManagement />;
       case 'chat':
         return <ChatManagement initialUserId={chatInitialUserId} />;
+      case 'chatbot':
+        return <ChatbotManagement />;
       case 'tradein':
         return <TradeIn adminOnly />;
       default:
@@ -131,6 +134,7 @@ function AdminDashboard() {
           {!isTechnician && <MenuBtn tab="categories" label="Danh mục" icon="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />}
           {!isTechnician && <MenuBtn tab="revenue" label="Doanh thu" icon="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14" />}
           {!isTechnician && <MenuBtn tab="chat" label="Chat khách hàng" icon="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.338-3.123C3.486 15.732 3 13.938 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />}
+          {!isTechnician && <MenuBtn tab="chatbot" label="Chatbot tự động" icon="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />}
           {!isTechnician && <MenuBtn tab="marketing" label="Banner & Slider" icon="M11 17l-5-5m0 0l5-5m-5 5h12" />}
           {!isTechnician && <MenuBtn tab="tradein" label="Thu cũ đổi mới" icon="M12 8c-2.21 0-4 1.79-4 4 0 2.21 1.79 4 4 4m0-8c2.21 0 4 1.79 4 4 0 2.21-1.79 4-4 4m0-8v8m-8 0h16" />}
           {!isTechnician && <MenuBtn tab="reviews" label="Đánh giá" icon="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />}

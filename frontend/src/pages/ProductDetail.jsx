@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { userAPI, authAPI } from '../services/api';
+import { userAPI } from '../services/api';
 import api from '../services/api';
 import styles from './ProductDetail.module.css';
 
@@ -14,7 +14,6 @@ function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [userInfo, setUserInfo] = useState(null);
-  const [cartItemCount, setCartItemCount] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -31,13 +30,12 @@ function ProductDetail() {
   useEffect(() => {
     loadProductData();
     loadUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   useEffect(() => {
-    if (userInfo && userInfo.id) {
-      loadCartCount();
-    }
-  }, [userInfo]);
+    setSelectedImageIndex(0);
+  }, [selectedVariant?.id]);
 
   useEffect(() => {
     const fetchFavoriteStatus = async () => {
@@ -88,7 +86,9 @@ function ProductDetail() {
       });
       setImages(sortedImages.map(img => ({
         ...img,
-        url: img.imageData ? `data:image/jpeg;base64,${img.imageData}` : null
+        url: img.imageData
+          ? (img.imageData.startsWith('data:') ? img.imageData : `data:image/jpeg;base64,${img.imageData}`)
+          : null
       })));
 
       const reviewsData = reviewsRes.data || [];
@@ -99,13 +99,15 @@ function ProductDetail() {
 
       const variantsData = variantsRes.data || [];
       setVariants(variantsData);
+      setSelectedVariant(null);
+      setSelectedImageIndex(0);
 
       // Load responses for all reviews
       const responsePromises = reviewsData.map(async (review) => {
         try {
           const responseRes = await userAPI.getReviewResponse(review.id);
           return { reviewId: review.id, response: responseRes.data };
-        } catch (error) {
+        } catch {
           return { reviewId: review.id, response: null };
         }
       });
@@ -145,18 +147,6 @@ function ProductDetail() {
     }
   };
 
-  const loadCartCount = async () => {
-    try {
-      const response = await userAPI.getCart(userInfo.id);
-      const items = response.data || [];
-      const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
-      setCartItemCount(totalCount);
-    } catch (error) {
-      console.error('Error loading cart count:', error);
-      setCartItemCount(0);
-    }
-  };
-
   const handleAddToCart = async () => {
     const token = localStorage.getItem('accessToken');
     if (!token || !userInfo) {
@@ -186,7 +176,7 @@ function ProductDetail() {
       const variantName = selectedVariant ? ` (${selectedVariant.name})` : '';
       alert(`Đã thêm ${quantity} sản phẩm${variantName} vào giỏ hàng!`);
       setQuantity(1); // Reset về 1 sau khi thêm thành công
-      loadCartCount(); // Refresh cart count
+      window.dispatchEvent(new Event('hometech:cart-updated'));
     } catch (error) {
       console.error('Error adding to cart:', error);
       if (error.response?.status === 401) {
@@ -286,22 +276,44 @@ function ProductDetail() {
 
   const handleVariantChange = (variant) => {
     setSelectedVariant(variant);
+    setSelectedImageIndex(0);
     // Reset quantity nếu vượt quá stock của variant mới
     if (variant && quantity > variant.stock) {
       setQuantity(variant.stock);
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-      localStorage.clear();
-      navigate('/login');
-    } catch (err) {
-      console.error('Logout error:', err);
-      localStorage.clear();
-      navigate('/login');
+  const displayImages = useMemo(() => {
+    if (!images.length) {
+      return [];
     }
+
+    const commonImages = images.filter((image) => !image.variantId);
+    const variantImages = selectedVariant
+      ? images.filter((image) => String(image.variantId) === String(selectedVariant.id))
+      : [];
+
+    if (variantImages.length > 0) {
+      return variantImages;
+    }
+
+    return commonImages.length > 0 ? commonImages : images;
+  }, [images, selectedVariant?.id]);
+
+  const activeImage = displayImages[selectedImageIndex] || displayImages[0];
+
+  const showPreviousImage = () => {
+    if (displayImages.length <= 1) {
+      return;
+    }
+    setSelectedImageIndex((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
+  };
+
+  const showNextImage = () => {
+    if (displayImages.length <= 1) {
+      return;
+    }
+    setSelectedImageIndex((prev) => (prev + 1) % displayImages.length);
   };
 
   const formatPrice = (price) => {
@@ -411,40 +423,6 @@ function ProductDetail() {
 
   return (
     <div className={styles.container}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link to="/" className={styles.logo}>
-            <span className={styles.logoText}>HomeTech</span>
-          </Link>
-          <div className={styles.headerActions}>
-            <Link to="/cart" className={styles.cartIcon}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              {cartItemCount > 0 && (
-                <span className={styles.cartBadge}>{cartItemCount}</span>
-              )}
-            </Link>
-            {userInfo ? (
-              <>
-                <span className={styles.username}>{userInfo.username}</span>
-                <button onClick={handleLogout} className={styles.logoutButton}>
-                  Đăng xuất
-                </button>
-              </>
-            ) : (
-              <Link to="/login" className={styles.loginButton}>
-                Đăng nhập
-              </Link>
-            )}
-            <button onClick={() => navigate(-1)} className={styles.backButton}>
-              ← Quay lại
-            </button>
-          </div>
-        </div>
-      </header>
-
       {/* Breadcrumb */}
       <div className={styles.breadcrumb}>
         <Link to="/">Trang chủ</Link>
@@ -455,19 +433,39 @@ function ProductDetail() {
       {/* Product Detail */}
       <div className={styles.productDetail}>
         <div className={styles.productImages}>
-          {images.length > 0 ? (
+          {displayImages.length > 0 ? (
             <>
               <div className={styles.mainImage}>
                 <img
-                  src={images[selectedImageIndex]?.url}
+                  src={activeImage?.url}
                   alt={product.name}
                 />
-              </div>
-              {images.length > 1 && (
-                <div className={styles.thumbnailImages}>
-                  {images.map((img, index) => (
+                {displayImages.length > 1 && (
+                  <>
                     <button
-                      key={index}
+                      type="button"
+                      className={`${styles.imageNavButton} ${styles.imageNavPrev}`}
+                      onClick={showPreviousImage}
+                      aria-label="Ảnh trước"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.imageNavButton} ${styles.imageNavNext}`}
+                      onClick={showNextImage}
+                      aria-label="Ảnh sau"
+                    >
+                      ›
+                    </button>
+                  </>
+                )}
+              </div>
+              {displayImages.length > 1 && (
+                <div className={styles.thumbnailImages}>
+                  {displayImages.map((img, index) => (
+                    <button
+                      key={img.id || index}
                       className={`${styles.thumbnail} ${selectedImageIndex === index ? styles.active : ''}`}
                       onClick={() => setSelectedImageIndex(index)}
                     >
@@ -780,4 +778,3 @@ function ProductDetail() {
 }
 
 export default ProductDetail;
-

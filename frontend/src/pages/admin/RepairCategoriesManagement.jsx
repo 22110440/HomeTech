@@ -28,7 +28,7 @@ export default function RepairCategoriesManagement() {
       ]);
       setPhoneItems(phoneRes?.data || []);
       setServiceItems(serviceRes?.data || []);
-    } catch (err) {
+    } catch {
       setError('Không thể tải danh mục sửa chữa.');
     } finally {
       setLoading(false);

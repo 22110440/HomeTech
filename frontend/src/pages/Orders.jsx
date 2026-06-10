@@ -133,12 +133,14 @@ function Orders() {
 
   useEffect(() => {
     loadUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (userInfo?.id) {
       loadOrders(statusFilter);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo, statusFilter]);
 
   useEffect(() => {
@@ -289,17 +291,6 @@ function Orders() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <Link to="/" className={styles.logo}>
-            <span className={styles.logoText}>HomeTech</span>
-          </Link>
-          <Link to="/" className={styles.backButton}>
-            ← Về trang chủ
-          </Link>
-        </div>
-      </header>
-
       <div className={styles.content}>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>Đơn hàng của tôi</h1>
@@ -606,4 +597,3 @@ function Orders() {
 }
 
 export default Orders;
-

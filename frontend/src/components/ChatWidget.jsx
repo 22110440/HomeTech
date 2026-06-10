@@ -1,10 +1,56 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
+import { Link, useLocation } from 'react-router-dom';
 import SockJS from 'sockjs-client';
 import { WS_ENDPOINT } from '../config/runtime';
 import styles from './ChatWidget.module.css';
 
+const quickPrompts = [
+  'Tư vấn điện thoại dưới 10 triệu',
+  'Kiểm tra đơn hàng của tôi',
+  'Lịch sửa chữa gần đây',
+  'Báo giá thay pin iPhone',
+];
+
+const INTERNAL_ROUTE_PATTERN =
+  /(\/(?:product|repair-packages)\/\d+|\/(?:repair-booking|repair-packages|my-repair-schedules|orders|cart|favorites|trade-in))\b/g;
+
+const renderMessageContent = (content, onRouteClick) => {
+  if (!content) return null;
+
+  const parts = [];
+  let lastIndex = 0;
+
+  for (const match of content.matchAll(INTERNAL_ROUTE_PATTERN)) {
+    const route = match[0];
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      parts.push(content.slice(lastIndex, index));
+    }
+
+    parts.push(
+      <Link
+        key={`${route}-${index}`}
+        to={route}
+        className={styles.messageLink}
+        onClick={onRouteClick}
+      >
+        {route}
+      </Link>
+    );
+    lastIndex = index + route.length;
+  }
+
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts.length ? parts : content;
+};
+
 const ChatWidget = () => {
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [conversation, setConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -17,18 +63,31 @@ const ChatWidget = () => {
   const [previewImage, setPreviewImage] = useState(null);
 
   const stompClientRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const messagesRef = useRef(null);
   const fileInputRef = useRef(null);
 
   /* ================= Utils ================= */
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = useCallback((behavior = 'smooth') => {
+    const container = messagesRef.current;
+    if (!container) return;
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior,
+    });
+  }, []);
 
-  useEffect(scrollToBottom, [messages, isOpen]);
+  useEffect(() => {
+    if (isOpen) scrollToBottom('smooth');
+  }, [messages, isOpen, scrollToBottom]);
 
-  const fetchWithAuth = async (url, options = {}) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    const frameId = requestAnimationFrame(() => scrollToBottom('auto'));
+    return () => cancelAnimationFrame(frameId);
+  }, [location.pathname, isOpen, scrollToBottom]);
+
+  const fetchWithAuth = useCallback(async (url, options = {}) => {
     const token = localStorage.getItem('accessToken');
     const res = await fetch(url, {
       ...options,
@@ -37,28 +96,11 @@ const ChatWidget = () => {
         ...(options.headers || {}),
       },
     });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }, []);
 
-    const rawText = await res.text();
-    const payload = rawText ? (() => {
-      try {
-        return JSON.parse(rawText);
-      } catch {
-        return null;
-      }
-    })() : null;
-
-    if (!res.ok) {
-      throw new Error(
-        payload?.message ||
-          payload?.error ||
-          `Request failed with status ${res.status}`
-      );
-    }
-
-    return payload || {};
-  };
-
-  const fetchFileWithAuth = async (messageId) => {
+  const fetchFileWithAuth = useCallback(async (messageId) => {
     const token = localStorage.getItem('accessToken');
     const res = await fetch(`/api/chat/messages/${messageId}/file`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -66,11 +108,11 @@ const ChatWidget = () => {
     if (!res.ok) throw new Error('Unauthorized');
     const blob = await res.blob();
     return URL.createObjectURL(blob);
-  };
+  }, []);
 
   /* ================= Load ================= */
 
-  const loadConversationAndMessages = async () => {
+  const loadConversationAndMessages = useCallback(async () => {
     setLoading(true);
     try {
       const conv = await fetchWithAuth('/api/chat/conversations/me');
@@ -82,18 +124,20 @@ const ChatWidget = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [fetchWithAuth]);
 
-  const loadUnreadCount = async () => {
+  const loadUnreadCount = useCallback(async () => {
     try {
       const res = await fetchWithAuth('/api/chat/unread-count');
       setUnreadCount(res?.count ?? res?.data?.count ?? 0);
-    } catch {}
-  };
+    } catch (error) {
+      console.warn('Không thể tải số tin nhắn chưa đọc', error);
+    }
+  }, [fetchWithAuth]);
 
   /* ================= WebSocket ================= */
 
-  const connectWebSocket = (conversationId) => {
+  const connectWebSocket = useCallback((conversationId) => {
     if (stompClientRef.current) return;
 
     const client = new Client({
@@ -113,13 +157,13 @@ const ChatWidget = () => {
 
     client.activate();
     stompClientRef.current = client;
-  };
+  }, []);
 
   useEffect(() => {
     loadUnreadCount();
     const t = setInterval(loadUnreadCount, 30000);
     return () => clearInterval(t);
-  }, []);
+  }, [loadUnreadCount]);
 
   useEffect(() => {
     if (isOpen && conversation) connectWebSocket(conversation.id);
@@ -127,7 +171,7 @@ const ChatWidget = () => {
       stompClientRef.current?.deactivate();
       stompClientRef.current = null;
     };
-  }, [isOpen, conversation?.id]);
+  }, [isOpen, conversation, connectWebSocket]);
 
   /* ================= Actions ================= */
 
@@ -135,13 +179,14 @@ const ChatWidget = () => {
     const open = !isOpen;
     setIsOpen(open);
 
-    if (open && !conversation) await loadConversationAndMessages();
+    if (!open) return;
 
-    if (open) {
-      try {
-        await fetchWithAuth('/api/chat/mark-read', { method: 'POST' });
-        setUnreadCount(0);
-      } catch {}
+    try {
+      await loadConversationAndMessages();
+      await fetchWithAuth('/api/chat/mark-read', { method: 'POST' });
+      setUnreadCount(0);
+    } catch (error) {
+      console.warn('Không thể đồng bộ cuộc trò chuyện', error);
     }
   };
 
@@ -149,22 +194,31 @@ const ChatWidget = () => {
     e.preventDefault();
     if ((!input.trim() && !file) || !conversation) return;
 
-    const formData = new FormData();
-    formData.append('conversationId', conversation.id);
-    if (input.trim()) formData.append('content', input.trim());
-    if (file) formData.append('file', file);
+    try {
+      const formData = new FormData();
+      formData.append('conversationId', conversation.id);
+      if (input.trim()) formData.append('content', input.trim());
+      if (file) formData.append('file', file);
 
-    const token = localStorage.getItem('accessToken');
-    await fetch('/api/chat/messages', {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch('/api/chat/messages', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+      if (!res.ok) throw new Error(await res.text());
 
-    setInput('');
-    setFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+      setInput('');
+      setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (error) {
+      console.error('Không thể gửi tin nhắn', error);
+    }
   };
+
+  const handleRouteLinkClick = useCallback(() => {
+    requestAnimationFrame(() => scrollToBottom('auto'));
+  }, [scrollToBottom]);
 
   /* ================= Message Item ================= */
 
@@ -172,12 +226,14 @@ const ChatWidget = () => {
     const [fileUrl, setFileUrl] = useState(null);
 
     useEffect(() => {
-      let revoked = false;
+      let active = true;
+      let objectUrl = null;
 
       const load = async () => {
         try {
           const url = await fetchFileWithAuth(m.id);
-          if (!revoked) setFileUrl(url);
+          objectUrl = url;
+          if (active) setFileUrl(url);
         } catch (e) {
           console.error('Không tải được file', e);
         }
@@ -186,27 +242,41 @@ const ChatWidget = () => {
       if (m.hasFile) load();
 
       return () => {
-        revoked = true;
-        if (fileUrl) URL.revokeObjectURL(fileUrl);
+        active = false;
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
       };
-    }, [m.id]);
+    }, [m.id, m.hasFile]);
 
     return (
       <div
         className={
           m.senderType === 'CUSTOMER'
             ? styles.messageCustomer
+            : m.senderType === 'BOT'
+            ? styles.messageBot
             : styles.messageAdmin
         }
       >
         {/* Wrapper để xếp dọc text + ảnh */}
         <div
-          className={styles.messageStack}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems:
+              m.senderType === 'CUSTOMER' ? 'flex-end' : 'flex-start',
+          }}
         >
+          {m.senderType === 'BOT' && (
+            <span className={styles.senderName}>HomeTech Bot 🤖</span>
+          )}
+          {m.handoffRequested && (
+            <span className={styles.handoffBadge}>Đã chuyển nhân viên</span>
+          )}
+
           {/* 🔵 BUBBLE TEXT */}
           {m.content && (
             <div className={styles.bubble}>
-              {m.content}
+              {renderMessageContent(m.content, handleRouteLinkClick)}
             </div>
           )}
 
@@ -256,15 +326,28 @@ const ChatWidget = () => {
             <button onClick={handleToggleOpen}>×</button>
           </div>
 
-          <div className={styles.messages}>
+          <div className={styles.messages} ref={messagesRef}>
             {loading && (
               <div className={styles.systemMessage}>
                 Đang tải cuộc trò chuyện...
               </div>
             )}
-            {!loading &&
+          {!loading &&
               messages.map((m) => <MessageItem key={m.id} m={m} />)}
-            <div ref={messagesEndRef} />
+          </div>
+
+          <div className={styles.quickPrompts}>
+            <div className={styles.quickPromptsHeader}>Gợi ý nhanh</div>
+            {quickPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => setInput(prompt)}
+              >
+                <span>{prompt}</span>
+                <span className={styles.quickPromptArrow}>↗</span>
+              </button>
+            ))}
           </div>
 
           {file && (

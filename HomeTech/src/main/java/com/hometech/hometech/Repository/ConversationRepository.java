@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
 
     Optional<Conversation> findByCustomer(Customer customer);
+
+    java.util.List<Conversation> findAllByOrderByLastMessageAtDesc();
 }
 
 

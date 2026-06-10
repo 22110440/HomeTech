@@ -74,6 +74,7 @@ export default function Checkout() {
 
   useEffect(() => {
     loadUserInfo();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -86,6 +87,7 @@ export default function Checkout() {
     } else {
       loadCart(userInfo.id);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userInfo, isBuyNowMode, buyNowContext.productId, buyNowContext.quantity]);
 
   const loadUserInfo = async () => {
@@ -257,8 +259,15 @@ export default function Checkout() {
         return;
       }
 
-      alert('Đặt hàng thành công! Chúng tôi sẽ liên hệ trong thời gian sớm nhất.');
-      navigate('/orders');
+      const successParams = new URLSearchParams({
+        orderId: String(createdOrder.id),
+        method: paymentMethod,
+      });
+      const finalAmount = createdOrder.totalAmount ?? pricing.finalTotal;
+      if (finalAmount !== undefined && finalAmount !== null) {
+        successParams.set('amount', String(finalAmount));
+      }
+      navigate(`/order-success?${successParams.toString()}`);
     } catch (error) {
       console.error('handlePlaceOrder error:', error);
       alert(error?.response?.data?.error || error.message || 'Không thể đặt hàng');
@@ -314,16 +323,6 @@ export default function Checkout() {
 
   return (
     <div className={styles.container}>
-      <header className={styles.header}>
-        <Link to="/" className={styles.logo}>
-          HomeTech
-        </Link>
-        <div className={styles.headerActions}>
-          <Link to="/cart">Giỏ hàng</Link>
-          <Link to="/orders">Đơn hàng</Link>
-        </div>
-      </header>
-
       <div className={styles.checkoutLayout}>
         <div className={styles.leftColumn}>
           <section className={styles.card}>
@@ -392,6 +391,7 @@ export default function Checkout() {
                   } ${option.comingSoon ? styles.paymentOptionDisabled : ''}`}
                 >
                   <input
+                    className={styles.paymentInput}
                     type="radio"
                     name="paymentMethod"
                     value={option.id}
@@ -399,11 +399,13 @@ export default function Checkout() {
                     checked={paymentMethod === option.id}
                     onChange={(event) => setPaymentMethod(event.target.value)}
                   />
-                  <div>
-                    <p className={styles.paymentLabel}>
-                      {option.label}
+                  <span className={styles.paymentMark} aria-hidden="true"></span>
+                  <div className={styles.paymentContent}>
+                    <div className={styles.paymentTopLine}>
+                      <span className={styles.paymentCode}>{option.id}</span>
                       {option.comingSoon && <span className={styles.badge}>Sắp ra mắt</span>}
-                    </p>
+                    </div>
+                    <p className={styles.paymentLabel}>{option.label}</p>
                     <p className={styles.paymentDescription}>{option.description}</p>
                   </div>
                 </label>
@@ -483,4 +485,3 @@ export default function Checkout() {
     </div>
   );
 }
-

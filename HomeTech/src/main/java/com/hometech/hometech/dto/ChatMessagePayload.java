@@ -10,6 +10,32 @@ public class ChatMessagePayload {
     private boolean hasFile;
     private String fileName;
     private String fileContentType;
+    private boolean isAutoReply;
+    private String chatbotIntent;
+    private boolean handoffRequested;
+
+    public boolean isAutoReply() {
+        return isAutoReply;
+    }
+    public void setAutoReply(boolean autoReply) {
+        this.isAutoReply = autoReply;
+    }
+
+    public String getChatbotIntent() {
+        return chatbotIntent;
+    }
+
+    public void setChatbotIntent(String chatbotIntent) {
+        this.chatbotIntent = chatbotIntent;
+    }
+
+    public boolean isHandoffRequested() {
+        return handoffRequested;
+    }
+
+    public void setHandoffRequested(boolean handoffRequested) {
+        this.handoffRequested = handoffRequested;
+    }
 
     public boolean isHasFile() {
         return hasFile;
@@ -69,5 +95,4 @@ public class ChatMessagePayload {
         this.sentAt = sentAt;
     }
 }
-
 

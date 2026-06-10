@@ -39,22 +39,31 @@ public class PayOsPublicController {
                         "SUCCEEDED".equalsIgnoreCase(status) ||
                         "COMPLETED".equalsIgnoreCase(status));
 
-        if (isSuccess && orderCode != null) {
-            paymentRepository.findByTxnRef(orderCode).ifPresent(payment -> {
-                payment.setStatus("SUCCESS");
-                payment.setTransactionStatus(status != null ? status : "SUCCESS");
-                paymentRepository.save(payment);
-            });
+        Payment payment = orderCode != null
+                ? paymentRepository.findByTxnRef(orderCode).orElse(null)
+                : null;
+
+        if (isSuccess && payment != null) {
+            payment.setStatus("SUCCESS");
+            payment.setTransactionStatus(status != null ? status : "SUCCESS");
+            paymentRepository.save(payment);
         }
 
-        String redirectUrl = UriComponentsBuilder.fromHttpUrl(normalizeFrontendBase(frontendBaseUrl))
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(normalizeFrontendBase(frontendBaseUrl))
                 .path("/payment/payos/result")
                 .queryParam("orderCode", orderCode)
                 .queryParam("success", isSuccess)
                 .queryParam("message", message != null ? message : (isSuccess ? "Thanh toán thành công" : "Thanh toán thất bại"))
-                .queryParam("status", status)
-                .build()
-                .toUriString();
+                .queryParam("status", status);
+
+        if (payment != null) {
+            if (payment.getOrder() != null) {
+                builder.queryParam("orderId", payment.getOrder().getId());
+            }
+            builder.queryParam("amount", payment.getAmount());
+        }
+
+        String redirectUrl = builder.build().toUriString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.LOCATION, redirectUrl);
@@ -66,14 +75,25 @@ public class PayOsPublicController {
             @RequestParam(required = false) String orderCode,
             @RequestParam(required = false) String message) {
 
-        String redirectUrl = UriComponentsBuilder.fromHttpUrl(normalizeFrontendBase(frontendBaseUrl))
+        Payment payment = orderCode != null
+                ? paymentRepository.findByTxnRef(orderCode).orElse(null)
+                : null;
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(normalizeFrontendBase(frontendBaseUrl))
                 .path("/payment/payos/result")
                 .queryParam("orderCode", orderCode)
                 .queryParam("success", false)
                 .queryParam("message", message != null ? message : "Thanh toán đã hủy")
-                .queryParam("status", "CANCELLED")
-                .build()
-                .toUriString();
+                .queryParam("status", "CANCELLED");
+
+        if (payment != null) {
+            if (payment.getOrder() != null) {
+                builder.queryParam("orderId", payment.getOrder().getId());
+            }
+            builder.queryParam("amount", payment.getAmount());
+        }
+
+        String redirectUrl = builder.build().toUriString();
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.LOCATION, redirectUrl);
@@ -88,4 +108,3 @@ public class PayOsPublicController {
         return base;
     }
 }
-

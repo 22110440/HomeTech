@@ -12,6 +12,24 @@ const defaultFormState = {
   hidden: false,
 };
 
+const createVariantClientKey = () =>
+  `variant-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const createVariantDraft = (variant = {}) => ({
+  id: variant.id,
+  clientKey: variant.id ? `variant-${variant.id}` : createVariantClientKey(),
+  name: variant.name || '',
+  stock: variant.stock ?? 0,
+  imageFiles: [],
+  imagePreviews: [],
+});
+
+const revokeVariantPreviews = (variant) => {
+  (variant?.imagePreviews || []).forEach((preview) => URL.revokeObjectURL(preview.url));
+};
+
+const normalizeVariantName = (name) => (name || '').trim().toLowerCase();
+
 export default function ProductsManagement() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -36,6 +54,7 @@ export default function ProductsManagement() {
 
   useEffect(() => {
     loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadInitialData = async () => {
@@ -163,11 +182,7 @@ export default function ProductsManagement() {
         })),
       );
       setVariants(
-        (detail.variants || []).map((v) => ({
-          id: v.id,
-          name: v.name || '',
-          stock: v.stock ?? 0,
-        })),
+        (detail.variants || []).map((v) => createVariantDraft(v)),
       );
 
       // Load thuộc tính danh mục tương ứng
@@ -187,6 +202,7 @@ export default function ProductsManagement() {
   };
 
   const closeModal = () => {
+    variants.forEach(revokeVariantPreviews);
     setModalOpen(false);
     setSubmitting(false);
     setEditingProduct(null);
@@ -259,10 +275,7 @@ export default function ProductsManagement() {
   const addVariantRow = () => {
     setVariants((prev) => [
       ...prev,
-      {
-        name: '',
-        stock: 0,
-      },
+      createVariantDraft(),
     ]);
   };
 
@@ -280,7 +293,32 @@ export default function ProductsManagement() {
   };
 
   const removeVariant = (index) => {
-    setVariants((prev) => prev.filter((_, idx) => idx !== index));
+    setVariants((prev) => {
+      revokeVariantPreviews(prev[index]);
+      return prev.filter((_, idx) => idx !== index);
+    });
+  };
+
+  const handleVariantImagesChange = (index, event) => {
+    const files = Array.from(event.target.files || []);
+    setVariants((prev) =>
+      prev.map((variant, idx) => {
+        if (idx !== index) {
+          return variant;
+        }
+
+        revokeVariantPreviews(variant);
+        return {
+          ...variant,
+          imageFiles: files,
+          imagePreviews: files.map((file) => ({
+            url: URL.createObjectURL(file),
+            name: file.name,
+          })),
+        };
+      }),
+    );
+    event.target.value = '';
   };
 
   const handleImageChange = (event) => {
@@ -316,8 +354,11 @@ export default function ProductsManagement() {
     const validVariants = variants
       .filter((v) => (v.name || '').trim() !== '')
       .map((v) => ({
+        id: v.id,
+        clientKey: v.clientKey,
         name: v.name.trim(),
         stock: Number(v.stock) || 0,
+        imageFiles: v.imageFiles || [],
       }));
 
     if (validVariants.length === 0) {
@@ -325,17 +366,15 @@ export default function ProductsManagement() {
       return;
     }
 
+    const normalizedVariantNames = validVariants.map((variant) => normalizeVariantName(variant.name));
+    if (new Set(normalizedVariantNames).size !== normalizedVariantNames.length) {
+      alert('Tên biến thể không được trùng nhau để hệ thống gắn ảnh đúng biến thể.');
+      return;
+    }
+
     // Lưu tất cả các thay đổi displayOrder chưa được lưu trước khi cập nhật sản phẩm
     if (editingProduct && existingImages.length > 0) {
       try {
-        const pendingUpdates = existingImages
-          .filter((img) => {
-            // Kiểm tra xem có thay đổi displayOrder không
-            const currentOrder = img.displayOrder != null ? img.displayOrder : 0;
-            // Lấy giá trị từ input nếu có
-            return true; // Sẽ kiểm tra và cập nhật tất cả
-          });
-
         // Đợi một chút để đảm bảo blur event đã được trigger
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
@@ -354,38 +393,73 @@ export default function ProductsManagement() {
           attribute: { id: Number(av.attributeId) },
           value: av.value,
         })),
-      variants: validVariants,
+      variants: validVariants.map((variant) => ({
+        ...(variant.id ? { id: variant.id } : {}),
+        name: variant.name,
+        stock: variant.stock,
+      })),
     };
 
     try {
       setSubmitting(true);
       let productId = editingProduct?.id;
+      let savedProduct = null;
 
       if (editingProduct) {
         const response = await adminAPI.updateProduct(editingProduct.id, payload);
         if (!response.success) throw new Error(response.message);
-        alert('Cập nhật sản phẩm thành công');
+        savedProduct = response.data;
       } else {
         const response = await adminAPI.createProduct(payload);
         if (!response.success) throw new Error(response.message);
+        savedProduct = response.data;
         productId = response.data?.id;
         if (!productId) {
           throw new Error('Không nhận được ID sản phẩm sau khi tạo');
         }
-        if (selectedImages.length > 0) {
-          const uploadResponse = await adminAPI.uploadProductImages(productId, selectedImages);
-          if (!uploadResponse.success) {
-            throw new Error(uploadResponse.message || 'Không thể upload ảnh sản phẩm');
-          }
-        }
-        alert('Thêm sản phẩm thành công');
       }
-      if (editingProduct && selectedImages.length > 0) {
+
+      if (selectedImages.length > 0) {
         const uploadResponse = await adminAPI.uploadProductImages(productId, selectedImages);
         if (!uploadResponse.success) {
           throw new Error(uploadResponse.message || 'Không thể upload ảnh sản phẩm');
         }
       }
+
+      if (!Array.isArray(savedProduct?.variants)) {
+        const refreshedProduct = await adminAPI.getProductById(productId);
+        if (refreshedProduct?.success) {
+          savedProduct = refreshedProduct.data;
+        }
+      }
+
+      const savedVariants = savedProduct?.variants || [];
+      for (const variantDraft of validVariants) {
+        if (!variantDraft.imageFiles.length) {
+          continue;
+        }
+
+        const savedVariant = variantDraft.id
+          ? savedVariants.find((variant) => String(variant.id) === String(variantDraft.id))
+          : savedVariants.find(
+              (variant) => normalizeVariantName(variant.name) === normalizeVariantName(variantDraft.name),
+            );
+
+        if (!savedVariant?.id) {
+          throw new Error(`Không tìm thấy ID biến thể "${variantDraft.name}" để upload ảnh`);
+        }
+
+        const uploadResponse = await adminAPI.uploadProductImages(
+          productId,
+          variantDraft.imageFiles,
+          savedVariant.id,
+        );
+        if (!uploadResponse.success) {
+          throw new Error(uploadResponse.message || `Không thể upload ảnh cho biến thể "${variantDraft.name}"`);
+        }
+      }
+
+      alert(editingProduct ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công');
       await loadProducts();
       closeModal();
     } catch (error) {
@@ -565,7 +639,7 @@ export default function ProductsManagement() {
                   <td>{product.category?.name || '—'}</td>
                   <td>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${product.hidden ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+                      className={`${styles.visibilityBadge} px-3 py-1 rounded-full text-xs font-medium ${product.hidden ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
                     >
                       {product.hidden ? 'Đang ẩn' : 'Đang hiển thị'}
                     </span>
@@ -693,41 +767,102 @@ export default function ProductsManagement() {
                 )}
                 {variants.length > 0 && (
                   <div className={styles.variantsList}>
-                    {variants.map((variant, index) => (
-                      <div key={index} className={styles.variantRow}>
-                        <div className={styles.variantInputs}>
-                          <input
-                            type="text"
-                            className={styles.variantNameInput}
-                            value={variant.name}
-                            onChange={(e) =>
-                              updateVariant(index, 'name', e.target.value)
-                            }
-                            placeholder="Tên biến thể (VD: 64GB Đen)"
-                          />
-                          <input
-                            type="number"
-                            min="0"
-                            className={styles.variantStockInput}
-                            value={variant.stock}
-                            onChange={(e) =>
-                              updateVariant(index, 'stock', e.target.value)
-                            }
-                            placeholder="Tồn kho"
-                          />
+                    {variants.map((variant, index) => {
+                      const savedVariantImages = variant.id
+                        ? existingImages.filter((image) => String(image.variantId) === String(variant.id))
+                        : [];
+
+                      return (
+                        <div key={variant.clientKey || variant.id || index} className={styles.variantRow}>
+                          <div className={styles.variantRowMain}>
+                            <div className={styles.variantInputs}>
+                              <input
+                                type="text"
+                                className={styles.variantNameInput}
+                                value={variant.name}
+                                onChange={(e) =>
+                                  updateVariant(index, 'name', e.target.value)
+                                }
+                                placeholder="Tên biến thể (VD: 8GB/256GB Đen)"
+                              />
+                              <input
+                                type="number"
+                                min="0"
+                                className={styles.variantStockInput}
+                                value={variant.stock}
+                                onChange={(e) =>
+                                  updateVariant(index, 'stock', e.target.value)
+                                }
+                                placeholder="Tồn kho"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.variantDeleteButton}
+                              onClick={() => removeVariant(index)}
+                              title="Xóa biến thể"
+                            >
+                              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+
+                          <div className={styles.variantMedia}>
+                            <div className={styles.variantMediaHeader}>
+                              <span>Ảnh minh họa riêng cho biến thể</span>
+                              {savedVariantImages.length > 0 && (
+                                <small>{savedVariantImages.length} ảnh đang lưu</small>
+                              )}
+                            </div>
+                            <label className={styles.variantUploadBox}>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(event) => handleVariantImagesChange(index, event)}
+                              />
+                              <span>Chọn ảnh cho biến thể này</span>
+                            </label>
+
+                            {variant.imagePreviews?.length > 0 && (
+                              <div className={`${styles.imagePreviewGrid} ${styles.variantImageGrid}`}>
+                                {variant.imagePreviews.map((preview, previewIndex) => (
+                                  <div
+                                    key={`${variant.clientKey}-${preview.name}-${previewIndex}`}
+                                    className={styles.imagePreview}
+                                  >
+                                    <img src={preview.url} alt={preview.name} />
+                                    <span>{preview.name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {savedVariantImages.length > 0 && (
+                              <div className={styles.variantSavedImages}>
+                                {savedVariantImages.map((image) => (
+                                  <div key={image.id} className={styles.variantSavedImage}>
+                                    <button
+                                      type="button"
+                                      className={styles.deleteImageButton}
+                                      onClick={(event) => handleDeleteImage(event, image.id)}
+                                      title="Xóa ảnh này"
+                                    >
+                                      ×
+                                    </button>
+                                    <img
+                                      src={`data:image/*;base64,${image.imageData}`}
+                                      alt={image.fileName || `Ảnh biến thể #${image.id}`}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <button
-                          type="button"
-                          className={styles.variantDeleteButton}
-                          onClick={() => removeVariant(index)}
-                          title="Xóa biến thể"
-                        >
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 <button
@@ -767,6 +902,11 @@ export default function ProductsManagement() {
                           />
                           <div className={styles.imageInfo}>
                             <span>{image.fileName || `Ảnh #${image.id}`}</span>
+                            <strong className={styles.imageScopeTag}>
+                              {image.variantId
+                                ? `Biến thể: ${image.variantName || `#${image.variantId}`}`
+                                : 'Ảnh chung'}
+                            </strong>
                             <div className={styles.displayOrderControl}>
                               <label>Thứ tự:</label>
                               <input
@@ -809,7 +949,7 @@ export default function ProductsManagement() {
               )}
 
               <div className={styles.formGroup}>
-                <label>Ảnh sản phẩm</label>
+                <label>Ảnh chung của sản phẩm</label>
                 <input
                   type="file"
                   accept="image/*"
