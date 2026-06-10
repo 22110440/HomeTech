@@ -350,7 +350,7 @@ function UsersManagement({ onOpenChat }) {
     if (onOpenChat) {
       onOpenChat(user.id);
     } else {
-      navigate('/admin');
+      navigate(`/admin/chat?userId=${user.id}`);
     }
   };
 

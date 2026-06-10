@@ -153,7 +153,8 @@ const NotificationBell = ({ inline = false }) => {
     if (type.startsWith('ORDER')) return '/orders';
     if (type.startsWith('CART')) return '/cart';
     if (type.startsWith('PROFILE')) return '/profile';
-    if (type.startsWith('PRODUCT') || type.startsWith('CATEGORY')) return '/admin';
+    if (type.startsWith('PRODUCT')) return '/admin/products';
+    if (type.startsWith('CATEGORY')) return '/admin/categories';
     return null;
   };
 

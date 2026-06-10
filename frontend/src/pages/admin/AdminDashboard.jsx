@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { authAPI } from '../../services/api';
 import Dashboard from './Dashboard';
 import OrdersManagement from './OrdersManagement';
@@ -17,15 +17,50 @@ import ChatbotManagement from './ChatbotManagement';
 import TradeIn from '../TradeIn';
 import styles from './AdminDashboard.module.css';
 
+const ADMIN_TAB_ROUTES = {
+  dashboard: '',
+  orders: 'orders',
+  products: 'products',
+  vouchers: 'vouchers',
+  repairPackages: 'repair-packages',
+  users: 'users',
+  categories: 'categories',
+  revenue: 'revenue',
+  chat: 'chat',
+  chatbot: 'chatbot',
+  marketing: 'banner-slider',
+  tradein: 'trade-in',
+  reviews: 'reviews',
+};
+
+const ROUTE_TO_ADMIN_TAB = Object.fromEntries(
+  Object.entries(ADMIN_TAB_ROUTES).map(([tab, route]) => [route, tab])
+);
+
+const getTabFromPath = (pathname) => {
+  const slug = pathname.replace(/^\/admin\/?/, '').split('/')[0];
+  return ROUTE_TO_ADMIN_TAB[slug] || 'dashboard';
+};
+
+const getAdminSlug = (pathname) => pathname.replace(/^\/admin\/?/, '').split('/')[0];
+
+const getAdminPath = (tab) => {
+  const route = ADMIN_TAB_ROUTES[tab];
+  return route ? `/admin/${route}` : '/admin';
+};
+
 function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('repairPackages');
   const [chatInitialUserId, setChatInitialUserId] = useState(null);
   const [adminInfo, setAdminInfo] = useState(null);
   const [role, setRole] = useState('ADMIN');
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isTechnician = role === 'THO';
+  const activeTab = getTabFromPath(location.pathname);
+  const activeSlug = getAdminSlug(location.pathname);
+  const chatUserIdFromUrl = new URLSearchParams(location.search).get('userId');
 
   useEffect(() => {
     const checkAuth = () => {
@@ -33,7 +68,7 @@ function AdminDashboard() {
       const token = localStorage.getItem('accessToken');
 
       if (!token || (currentRole !== 'ADMIN' && currentRole !== 'THO')) {
-        navigate('/AdminLogin');
+        navigate('/admin/login', { replace: true });
         return;
       }
 
@@ -48,9 +83,23 @@ function AdminDashboard() {
     checkAuth();
   }, [navigate]);
 
+  useEffect(() => {
+    if (loading) return;
+
+    if (activeSlug && !ROUTE_TO_ADMIN_TAB[activeSlug]) {
+      navigate(getAdminPath(isTechnician ? 'repairPackages' : 'dashboard'), { replace: true });
+      return;
+    }
+
+    const allowedTabs = isTechnician ? ['repairPackages'] : Object.keys(ADMIN_TAB_ROUTES);
+    if (!allowedTabs.includes(activeTab)) {
+      navigate(getAdminPath(isTechnician ? 'repairPackages' : 'dashboard'), { replace: true });
+    }
+  }, [activeSlug, activeTab, isTechnician, loading, navigate]);
+
   const handleOpenChatForUser = (userId) => {
     setChatInitialUserId(userId);
-    setActiveTab('chat');
+    navigate(`${getAdminPath('chat')}?userId=${userId}`);
   };
 
   const handleLogout = async () => {
@@ -60,7 +109,7 @@ function AdminDashboard() {
       console.error('Logout error:', err);
     } finally {
       localStorage.clear();
-      navigate('/AdminLogin');
+      navigate('/admin/login');
     }
   };
 
@@ -95,7 +144,7 @@ function AdminDashboard() {
       case 'marketing':
         return <BannerSliderManagement />;
       case 'chat':
-        return <ChatManagement initialUserId={chatInitialUserId} />;
+        return <ChatManagement initialUserId={chatInitialUserId || chatUserIdFromUrl} />;
       case 'chatbot':
         return <ChatbotManagement />;
       case 'tradein':
@@ -106,7 +155,14 @@ function AdminDashboard() {
   };
 
   const MenuBtn = ({ tab, label, icon }) => (
-    <button className={`${styles.navItem} ${activeTab === tab ? styles.active : ''}`} onClick={() => setActiveTab(tab)}>
+    <button
+      className={`${styles.navItem} ${activeTab === tab ? styles.active : ''}`}
+      onClick={() => {
+        setChatInitialUserId(null);
+        navigate(getAdminPath(tab));
+      }}
+      type="button"
+    >
       <svg className={styles.navIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
       </svg>

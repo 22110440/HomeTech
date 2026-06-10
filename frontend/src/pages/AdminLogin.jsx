@@ -42,8 +42,8 @@ function AdminLogin() {
           localStorage.setItem('adminId', response.data.adminId);
         }
 
-        // Redirect đến trang admin
-        navigate('/admin');
+        // Admin vào Dashboard, thợ vào khu quản lý sửa chữa.
+        navigate(response.data.role === 'THO' ? '/admin/repair-packages' : '/admin');
       }
     } catch (err) {
       setError(

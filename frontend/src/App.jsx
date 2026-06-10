@@ -52,7 +52,7 @@ function AppRoutes() {
         <Route path="/AdminLogin" element={<AdminLogin />} />
 
         {/* Admin Dashboard */}
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/*" element={<AdminDashboard />} />
 
         {/* OAuth2 callback */}
         <Route path="/oauth2/callback" element={<OAuthCallback />} />

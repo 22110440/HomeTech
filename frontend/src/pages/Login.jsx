@@ -68,8 +68,10 @@ function Login() {
         localStorage.setItem('role', response.data.role);
 
         // Redirect dựa trên role
-        if (response.data.role === 'ADMIN' || response.data.role === 'THO') {
+        if (response.data.role === 'ADMIN') {
           navigate('/admin');
+        } else if (response.data.role === 'THO') {
+          navigate('/admin/repair-packages');
         } else {
           navigate('/');
         }
